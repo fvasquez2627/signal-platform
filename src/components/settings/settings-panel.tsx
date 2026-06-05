@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { AddProductModal } from "@/components/settings/add-product-modal";
+import { ClientConfigForm } from "@/components/settings/client-config-form";
+import { NewClientWizard } from "@/components/settings/new-client-wizard";
+import { ProductConfigForm } from "@/components/settings/product-config-form";
 import { useApp } from "@/context/app-context";
 import {
   ALWAYS_ON_KEYS,
@@ -10,7 +14,6 @@ import {
   type IntegrationKey,
 } from "@/lib/integrations/config";
 import { useIntegrations } from "@/lib/integrations/context";
-import { createClient } from "@/lib/supabase/client";
 import type { UserRole } from "@/types/database";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 
@@ -34,77 +37,6 @@ const MOCK_USERS = [
   { id: "2", email: "sam@brand.com", role: "manager" as UserRole, lastActive: "1h ago" },
   { id: "3", email: "jordan@brand.com", role: "viewer" as UserRole, lastActive: "3d ago" },
 ];
-
-const PLATFORMS_LIST = ["TikTok", "Meta", "Instagram", "Google", "Amazon", "YouTube"];
-
-function TagInput({
-  label,
-  values,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  values: string[];
-  onChange: (v: string[]) => void;
-  placeholder?: string;
-}) {
-  const [input, setInput] = useState("");
-
-  const add = () => {
-    const trimmed = input.trim();
-    if (trimmed && !values.includes(trimmed)) {
-      onChange([...values, trimmed]);
-    }
-    setInput("");
-  };
-
-  return (
-    <div>
-      <label className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
-        {label}
-      </label>
-      <div className="mt-1.5 flex flex-wrap gap-1.5">
-        {values.map((v) => (
-          <span
-            key={v}
-            className="flex items-center gap-1 rounded bg-white/10 px-2 py-0.5 text-xs text-white/70"
-          >
-            {v}
-            <button
-              type="button"
-              onClick={() => onChange(values.filter((x) => x !== v))}
-              className="text-white/40 hover:text-white"
-              aria-label={`Remove ${v}`}
-            >
-              ×
-            </button>
-          </span>
-        ))}
-      </div>
-      <div className="mt-2 flex gap-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              add();
-            }
-          }}
-          placeholder={placeholder}
-          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[var(--cyan)]/40"
-        />
-        <button
-          type="button"
-          onClick={add}
-          className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white/70 hover:bg-white/5"
-        >
-          Add
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function PaidIntegrationCard({
   integrationKey,
@@ -542,118 +474,6 @@ function UsersTab() {
   );
 }
 
-function ClientConfigForm({
-  client,
-}: {
-  client: NonNullable<ReturnType<typeof useApp>["currentClient"]>;
-}) {
-  const [name, setName] = useState(client.name);
-  const [brandVoice, setBrandVoice] = useState(client.brand_voice ?? "");
-  const [compliance, setCompliance] = useState(client.compliance_notes ?? "");
-  const [competitors, setCompetitors] = useState<string[]>([]);
-  const [demographics, setDemographics] = useState<string[]>([
-    "25–34 wellness",
-    "DTC supplement buyers",
-  ]);
-  const [platforms, setPlatforms] = useState<string[]>(["TikTok", "Meta", "Instagram"]);
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      const supabase = createClient();
-      await supabase
-        .from("clients")
-        .update({
-          name,
-          brand_voice: brandVoice,
-          compliance_notes: compliance,
-        } as never)
-        .eq("id", client.id);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="max-w-2xl space-y-4">
-      <div>
-        <label className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
-          Client name
-        </label>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[var(--cyan)]/40"
-        />
-      </div>
-      <div>
-        <label className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
-          Brand voice
-        </label>
-        <textarea
-          value={brandVoice}
-          onChange={(e) => setBrandVoice(e.target.value)}
-          rows={4}
-          className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[var(--cyan)]/40"
-        />
-      </div>
-      <div>
-        <label className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
-          Compliance notes
-        </label>
-        <textarea
-          value={compliance}
-          onChange={(e) => setCompliance(e.target.value)}
-          rows={3}
-          className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[var(--cyan)]/40"
-        />
-      </div>
-      <TagInput
-        label="Primary competitors"
-        values={competitors}
-        onChange={setCompetitors}
-        placeholder="Add competitor"
-      />
-      <TagInput
-        label="Target demographics"
-        values={demographics}
-        onChange={setDemographics}
-        placeholder="Add demographic"
-      />
-      <div>
-        <p className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
-          Active platforms
-        </p>
-        <div className="mt-2 flex flex-wrap gap-3">
-          {PLATFORMS_LIST.map((p) => (
-            <label key={p} className="flex items-center gap-2 text-sm text-white/70">
-              <input
-                type="checkbox"
-                checked={platforms.includes(p)}
-                onChange={(e) => {
-                  if (e.target.checked) setPlatforms((prev) => [...prev, p]);
-                  else setPlatforms((prev) => prev.filter((x) => x !== p));
-                }}
-                className="rounded border-white/20"
-              />
-              {p}
-            </label>
-          ))}
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={() => void save()}
-        disabled={saving}
-        className="rounded-lg bg-[var(--green)] px-4 py-2 text-sm font-semibold text-[var(--bg)] hover:opacity-90 disabled:opacity-50"
-      >
-        {saving ? "Saving…" : "Save"}
-      </button>
-    </div>
-  );
-}
-
 function ClientConfigTab() {
   const { currentClient } = useApp();
 
@@ -664,119 +484,35 @@ function ClientConfigTab() {
   return <ClientConfigForm key={currentClient.id} client={currentClient} />;
 }
 
-function ProductConfigForm({
-  product,
-  clientProducts,
-  onSelectProduct,
-}: {
-  product: NonNullable<ReturnType<typeof useApp>["currentProduct"]>;
-  clientProducts: ReturnType<typeof useApp>["products"];
-  onSelectProduct: (id: string) => void;
-}) {
-  const [name, setName] = useState(product.name);
-  const [keywords, setKeywords] = useState<string[]>(product.keywords ?? []);
-  const [competitors, setCompetitors] = useState<string[]>(product.competitors ?? []);
-  const [seasonal, setSeasonal] = useState<string[]>(["Q1 wellness reset", "Back-to-school"]);
-  const [overrideVoice, setOverrideVoice] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      const supabase = createClient();
-      await supabase
-        .from("products")
-        .update({
-          name,
-          keywords,
-          competitors,
-        } as never)
-        .eq("id", product.id);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="max-w-2xl space-y-4">
-      <div>
-        <label className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
-          Product
-        </label>
-        <select
-          value={product.id}
-          onChange={(e) => onSelectProduct(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white"
-        >
-          {clientProducts.map((p) => (
-            <option key={p.id} value={p.id} className="bg-[var(--bg)]">
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
-          Product name
-        </label>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[var(--cyan)]/40"
-        />
-      </div>
-      <TagInput label="Keywords" values={keywords} onChange={setKeywords} placeholder="Add keyword" />
-      <TagInput
-        label="Product-specific competitors"
-        values={competitors}
-        onChange={setCompetitors}
-        placeholder="Add competitor"
-      />
-      <TagInput
-        label="Seasonal peaks"
-        values={seasonal}
-        onChange={setSeasonal}
-        placeholder="Add season"
-      />
-      <label className="flex items-center gap-2 text-sm text-white/70">
-        <input
-          type="checkbox"
-          checked={overrideVoice}
-          onChange={(e) => setOverrideVoice(e.target.checked)}
-          className="rounded border-white/20"
-        />
-        Override brand voice for this product
-      </label>
-      <button
-        type="button"
-        onClick={() => void save()}
-        disabled={saving}
-        className="rounded-lg bg-[var(--green)] px-4 py-2 text-sm font-semibold text-[var(--bg)] hover:opacity-90 disabled:opacity-50"
-      >
-        {saving ? "Saving…" : "Save"}
-      </button>
-    </div>
-  );
-}
-
 function ProductConfigTab() {
-  const { currentProduct, products, setCurrentProductId } = useApp();
+  const { currentClient, currentProduct, products, setCurrentProductId } = useApp();
+  const [showAddProduct, setShowAddProduct] = useState(false);
 
   const clientProducts = products.filter(
     (p) => p.client_id === currentProduct?.client_id,
   );
 
-  if (!currentProduct) {
+  if (!currentProduct || !currentClient) {
     return <p className="text-sm text-white/45">Select a product in the top bar.</p>;
   }
 
   return (
-    <ProductConfigForm
-      key={currentProduct.id}
-      product={currentProduct}
-      clientProducts={clientProducts}
-      onSelectProduct={setCurrentProductId}
-    />
+    <>
+      <ProductConfigForm
+        key={currentProduct.id}
+        product={currentProduct}
+        client={currentClient}
+        clientProducts={clientProducts}
+        onSelectProduct={setCurrentProductId}
+        onAddProduct={() => setShowAddProduct(true)}
+      />
+      {showAddProduct && (
+        <AddProductModal
+          client={currentClient}
+          onClose={() => setShowAddProduct(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -821,6 +557,7 @@ type SettingsPanelProps = {
 export function SettingsPanel({ variant }: SettingsPanelProps) {
   const { role } = useApp();
   const [tab, setTab] = useState<SettingsTab>("integrations");
+  const [showNewClient, setShowNewClient] = useState(false);
   const isAdmin = role === "admin";
 
   const visibleTabs = isAdmin
@@ -851,6 +588,16 @@ export function SettingsPanel({ variant }: SettingsPanelProps) {
         </p>
       )}
 
+      {isAdmin && (
+        <button
+          type="button"
+          onClick={() => setShowNewClient(true)}
+          className="w-full rounded-lg border border-dashed border-[var(--cyan)]/40 bg-[var(--cyan)]/5 px-4 py-3 text-sm font-medium text-[var(--cyan)] transition-colors hover:bg-[var(--cyan)]/10 sm:w-auto"
+        >
+          + Add New Client
+        </button>
+      )}
+
       <div className="-mx-1 overflow-x-auto px-1 pb-1">
         <div className="flex min-w-max gap-1">
           {visibleTabs.map((t) => (
@@ -878,6 +625,8 @@ export function SettingsPanel({ variant }: SettingsPanelProps) {
       <div className="border-t border-white/10 pt-4">
         <SignOutButton />
       </div>
+
+      {showNewClient && <NewClientWizard onClose={() => setShowNewClient(false)} />}
     </div>
   );
 }

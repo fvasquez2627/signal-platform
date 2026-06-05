@@ -2,6 +2,8 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { IntegrationSection } from "@/components/integrations/integration-section";
+import { useApp } from "@/context/app-context";
+import { matchesKeyword } from "@/lib/product-utils";
 import {
   AEO_QUERIES,
   AI_PRESENCE,
@@ -309,7 +311,43 @@ function SearchPresenceSection() {
   );
 }
 
+function MonitoringKeywordsBar() {
+  const { currentKeywords } = useApp();
+  const keywords = currentKeywords.slice(0, 8);
+
+  if (keywords.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-[#1C2530] bg-[#0A0D12] px-4 py-3">
+      <p className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
+        Monitoring keywords
+      </p>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {keywords.map((kw) => (
+          <span
+            key={kw}
+            className="rounded-md bg-[var(--cyan)]/10 px-2 py-0.5 text-xs text-[var(--cyan)]"
+          >
+            {kw}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function KeywordIntelligenceSection() {
+  const { currentKeywords } = useApp();
+  const rows = useMemo(() => {
+    const prioritized = KEYWORD_INTELLIGENCE.filter((row) =>
+      matchesKeyword(row.keyword, currentKeywords),
+    );
+    const rest = KEYWORD_INTELLIGENCE.filter(
+      (row) => !matchesKeyword(row.keyword, currentKeywords),
+    );
+    return [...prioritized, ...rest];
+  }, [currentKeywords]);
+
   return (
     <Panel title="Keyword Intelligence">
       <div className="-mx-4 mb-6 overflow-x-auto px-4">
@@ -325,7 +363,7 @@ function KeywordIntelligenceSection() {
             </tr>
           </thead>
           <tbody>
-            {KEYWORD_INTELLIGENCE.map((row) => {
+            {rows.map((row) => {
               const intent = INTENT_STYLES[row.intent];
               return (
                 <tr key={row.id} className="border-b border-white/5">
@@ -704,6 +742,7 @@ function DetailView() {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
       <div className="space-y-4 lg:col-span-2 lg:space-y-6">
+        <MonitoringKeywordsBar />
         {/* INTEGRATION: google_search_console */}
         {/* Toggle: Settings > Integrations > Google Search Console */}
         {/* When OFF: hide this entire section */}

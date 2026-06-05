@@ -302,21 +302,21 @@ export const FEED_SIGNALS: FeedSignal[] = [
   },
 ];
 
-export function getTopSignals(count = 3): FeedSignal[] {
-  return [...FEED_SIGNALS].sort((a, b) => b.score - a.score).slice(0, count);
+export function getTopSignals(count = 3, signals: FeedSignal[] = FEED_SIGNALS): FeedSignal[] {
+  return [...signals].sort((a, b) => b.score - a.score).slice(0, count);
 }
 
-export function countByType() {
+export function countByType(signals: FeedSignal[] = FEED_SIGNALS) {
   const counts = { opportunity: 0, threat: 0, awareness: 0, competitor: 0 };
-  for (const s of FEED_SIGNALS) {
+  for (const s of signals) {
     counts[s.type] += 1;
   }
   return counts;
 }
 
-export function topSourcesByCount(limit = 5) {
+export function topSourcesByCount(signals: FeedSignal[] = FEED_SIGNALS, limit = 5) {
   const map = new Map<string, number>();
-  for (const s of FEED_SIGNALS) {
+  for (const s of signals) {
     map.set(s.source, (map.get(s.source) ?? 0) + 1);
   }
   return [...map.entries()]

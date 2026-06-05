@@ -2,6 +2,8 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { CompetitiveExtras } from "@/components/competitive/competitive-extras";
+import { useApp } from "@/context/app-context";
+import { matchesCompetitorName } from "@/lib/product-utils";
 import { IntegrationSection } from "@/components/integrations/integration-section";
 import {
   COMPETITORS,
@@ -106,7 +108,12 @@ function PressureScoreRing({ score, size = 80 }: { score: number; size?: number 
   );
 }
 
-function SummaryView() {
+function SummaryView({ activeCompetitors }: { activeCompetitors: Competitor[] }) {
+  const activeNames = new Set(activeCompetitors.map((c) => c.name));
+  const topMoves = TOP_MOVES.filter((m) =>
+    [...activeNames].some((name) => matchesCompetitorName(m.competitor, [name])),
+  );
+
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
@@ -133,7 +140,7 @@ function SummaryView() {
 
       <Panel title="Top Moves This Week">
         <ul className="space-y-3">
-          {TOP_MOVES.map((item) => (
+          {topMoves.map((item) => (
             <li
               key={item.competitor}
               className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5"
@@ -261,16 +268,24 @@ function MetaAdCard({ ad, showCreativeBadge }: { ad: MetaAd; showCreativeBadge?:
   );
 }
 
-function MetaAdLibrary() {
+function MetaAdLibrary({ activeCompetitors }: { activeCompetitors: Competitor[] }) {
   const [filter, setFilter] = useState<string>("all");
-  const competitors = ["all", ...COMPETITORS.map((c) => c.id)];
+  const competitors = ["all", ...activeCompetitors.map((c) => c.id)];
+
+  const scopedAds = useMemo(
+    () => {
+      const activeIds = new Set(activeCompetitors.map((c) => c.id));
+      return META_ADS.filter((ad) => activeIds.has(ad.competitorId));
+    },
+    [activeCompetitors],
+  );
 
   const filtered = useMemo(
     () =>
       filter === "all"
-        ? META_ADS
-        : META_ADS.filter((ad) => ad.competitorId === filter),
-    [filter],
+        ? scopedAds
+        : scopedAds.filter((ad) => ad.competitorId === filter),
+    [filter, scopedAds],
   );
 
   return (
@@ -285,7 +300,7 @@ function MetaAdLibrary() {
             const label =
               id === "all"
                 ? "All"
-                : COMPETITORS.find((c) => c.id === id)?.name ?? id;
+                : activeCompetitors.find((c) => c.id === id)?.name ?? id;
             return (
               <button
                 key={id}
@@ -313,7 +328,12 @@ function MetaAdLibrary() {
   );
 }
 
-function PricingIntelligence() {
+function PricingIntelligence({ activeCompetitors }: { activeCompetitors: Competitor[] }) {
+  const activeNames = activeCompetitors.map((c) => c.name);
+  const rows = PRICING_ROWS.filter((row) =>
+    matchesCompetitorName(row.competitor, activeNames),
+  );
+
   return (
     <Panel title="Pricing Intelligence">
       <div className="-mx-4 overflow-x-auto px-4">
@@ -329,7 +349,7 @@ function PricingIntelligence() {
             </tr>
           </thead>
           <tbody>
-            {PRICING_ROWS.map((row) => {
+            {rows.map((row) => {
               const { diff, pct, label } = getPriceDiff(row.theirPrice, row.yourPrice);
               const highlight =
                 label === "underpriced"
@@ -509,21 +529,21 @@ function DetailSidebar() {
   );
 }
 
-function DetailView() {
+function DetailView({ activeCompetitors }: { activeCompetitors: Competitor[] }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         <div className="space-y-4 lg:col-span-2 lg:space-y-6">
           <Panel title="Competitor Tracker">
             <div className="space-y-4">
-              {COMPETITORS.map((c) => (
+              {activeCompetitors.map((c) => (
                 <CompetitorCard key={c.id} competitor={c} />
               ))}
             </div>
           </Panel>
 
-          <MetaAdLibrary />
-          <PricingIntelligence />
+          <MetaAdLibrary activeCompetitors={activeCompetitors} />
+          <PricingIntelligence activeCompetitors={activeCompetitors} />
           <ShareOfVoiceChart />
         </div>
         <DetailSidebar />
@@ -534,8 +554,14 @@ function DetailView() {
 }
 
 export function CompetitiveIntel({ variant }: CompetitiveIntelProps) {
+  const { currentCompetitors } = useApp();
+  const activeCompetitors = useMemo(() => {
+    if (currentCompetitors.length === 0) return COMPETITORS;
+    return COMPETITORS.filter((c) => matchesCompetitorName(c.name, currentCompetitors));
+  }, [currentCompetitors]);
+
   if (variant === "summary") {
-    return <SummaryView />;
+    return <SummaryView activeCompetitors={activeCompetitors} />;
   }
-  return <DetailView />;
+  return <DetailView activeCompetitors={activeCompetitors} />;
 }

@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { useApp } from "@/context/app-context";
+import { getProductSignalCount, matchesKeyword } from "@/lib/product-utils";
 import {
   countByType,
   DETAIL_FILTERS,
@@ -166,11 +167,40 @@ function ViewAllPrompt() {
   );
 }
 
+function MonitoringKeywordsBar() {
+  const { currentKeywords } = useApp();
+  const keywords = currentKeywords.slice(0, 6);
+
+  if (keywords.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-[#1C2530] bg-[#0A0D12] px-4 py-3">
+      <p className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
+        Monitoring keywords
+      </p>
+      <p className="mt-1.5 text-sm text-white/70">{keywords.join(" · ")}</p>
+    </div>
+  );
+}
+
 function SummaryView() {
-  const topSignals = getTopSignals(3);
+  const { currentKeywords, selectedProduct } = useApp();
+  const topSignals = useMemo(() => {
+    const matched = FEED_SIGNALS.filter((s) =>
+      matchesKeyword(`${s.title} ${s.body} ${s.tags.join(" ")}`, currentKeywords),
+    );
+    const list = matched.length > 0 ? matched : FEED_SIGNALS;
+    return getTopSignals(3, list);
+  }, [currentKeywords]);
+
+  const sourceCount = getProductSignalCount(selectedProduct?.name ?? "All Products");
 
   return (
     <div className="space-y-4">
+      <MonitoringKeywordsBar />
+      <p className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
+        {sourceCount} sources active for this product scope
+      </p>
       {topSignals.map((signal) => (
         <SignalCard key={signal.id} signal={signal} compact />
       ))}
@@ -208,8 +238,8 @@ function FilterBar({
   );
 }
 
-function ScoreSummaryRow() {
-  const counts = countByType();
+function ScoreSummaryRow({ signals }: { signals: FeedSignal[] }) {
+  const counts = countByType(signals);
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -234,8 +264,8 @@ function ScoreSummaryRow() {
   );
 }
 
-function BreakdownDonut() {
-  const counts = countByType();
+function BreakdownDonut({ signals }: { signals: FeedSignal[] }) {
+  const counts = countByType(signals);
   const total =
     counts.opportunity + counts.threat + counts.awareness + counts.competitor;
   const threatTotal = counts.threat + counts.competitor;
@@ -285,13 +315,21 @@ function BreakdownDonut() {
   );
 }
 
-function DetailSidebar() {
-  const sources = topSourcesByCount(5);
+function DetailSidebar({ signals }: { signals: FeedSignal[] }) {
+  const { currentKeywords, selectedProduct } = useApp();
+  const sources = topSourcesByCount(signals, 5);
+  const sourceCount = getProductSignalCount(selectedProduct?.name ?? "All Products");
+  const trending = useMemo(() => {
+    return currentKeywords.slice(0, 5).map((term, i) => ({
+      term,
+      change: TRENDING_KEYWORDS[i]?.change ?? "+12%",
+    }));
+  }, [currentKeywords]);
 
   return (
     <aside className="flex flex-col gap-4 lg:gap-6">
       <Panel title="Signal Score Breakdown">
-        <BreakdownDonut />
+        <BreakdownDonut signals={signals} />
       </Panel>
 
       <Panel title="Top Sources">
@@ -308,8 +346,11 @@ function DetailSidebar() {
       </Panel>
 
       <Panel title="Trending Keywords">
+        <p className="mb-3 font-mono-label text-[10px] text-white/40">
+          {sourceCount} sources · product scope
+        </p>
         <ul className="space-y-2">
-          {TRENDING_KEYWORDS.map((kw) => (
+          {trending.map((kw) => (
             <li
               key={kw.term}
               className="flex items-center justify-between gap-2 rounded-lg bg-white/[0.03] px-3 py-2"
@@ -351,28 +392,37 @@ function DetailSidebar() {
 
 function DetailView() {
   const [filter, setFilter] = useState<DetailFilter>("all");
+  const { currentKeywords } = useApp();
+
+  const scopedSignals = useMemo(() => {
+    const matched = FEED_SIGNALS.filter((s) =>
+      matchesKeyword(`${s.title} ${s.body} ${s.tags.join(" ")}`, currentKeywords),
+    );
+    return matched.length > 0 ? matched : FEED_SIGNALS;
+  }, [currentKeywords]);
 
   const filtered = useMemo(
     () =>
-      FEED_SIGNALS.filter((s) => matchesFilter(s, filter)).sort(
+      scopedSignals.filter((s) => matchesFilter(s, filter)).sort(
         (a, b) => b.score - a.score,
       ),
-    [filter],
+    [filter, scopedSignals],
   );
 
   return (
     <div className="space-y-6">
+      <MonitoringKeywordsBar />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         <div className="space-y-4 lg:col-span-2 lg:space-y-6">
           <FilterBar active={filter} onChange={setFilter} />
-          <ScoreSummaryRow />
+          <ScoreSummaryRow signals={scopedSignals} />
           <div className="space-y-4">
             {filtered.map((signal) => (
               <SignalCard key={signal.id} signal={signal} />
             ))}
           </div>
         </div>
-        <DetailSidebar />
+        <DetailSidebar signals={scopedSignals} />
       </div>
       <SignalsIntelExtras />
     </div>

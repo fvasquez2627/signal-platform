@@ -108,6 +108,9 @@ function ToggleSwitch({
 
 function SummaryView() {
   const [approved, setApproved] = useState(false);
+  const { selectedProduct, selectedClient, currentBenefit } = useApp();
+  const productName = selectedProduct?.name ?? "All Products";
+  const clientName = selectedClient?.name ?? "YouTheory";
 
   return (
     <div className="space-y-4">
@@ -135,7 +138,9 @@ function SummaryView() {
         <p className="font-mono-label text-[10px] uppercase tracking-widest text-[var(--green)]">
           Hook
         </p>
-        <p className="mt-1.5 text-sm leading-relaxed text-white/80">{SUMMARY.topHook}</p>
+        <p className="mt-1.5 text-sm leading-relaxed text-white/80">
+          {personalizeCopy(SUMMARY.topHook, clientName, productName, currentBenefit)}
+        </p>
         <p className="mt-3 font-mono-label text-[10px] text-white/35">
           Source · {SUMMARY.signalSource}
         </p>
@@ -216,7 +221,49 @@ function BucketCard({
   );
 }
 
+function ContentAnglesSection() {
+  const { currentAngles, selectedProduct } = useApp();
+
+  if (currentAngles.length === 0) return null;
+
+  return (
+    <Panel title="Content Angles">
+      <p className="mb-3 text-sm text-white/50">
+        Recommended angles for {selectedProduct?.name ?? "this product"}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {currentAngles.map((angle) => (
+          <span
+            key={angle}
+            className="rounded-lg border border-[var(--cyan)]/25 bg-[var(--cyan)]/10 px-3 py-1.5 text-sm text-[var(--cyan)]"
+          >
+            {angle}
+          </span>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+function personalizeCopy(
+  text: string,
+  clientName: string,
+  productName: string,
+  benefit: string,
+): string {
+  const product = productName === "All Products" ? "wellness supplements" : productName;
+  return text
+    .replace(/YouTheory/g, clientName)
+    .replace(/Collagen Peptides/g, product)
+    .replace(/collagen peptides/gi, product.toLowerCase())
+    .replace(
+      /Skin elasticity, joint support, hair and nail strength/g,
+      benefit,
+    );
+}
+
 function ContentBucketsSection() {
+  const { selectedProduct } = useApp();
   const [buckets, setBuckets] = useState(CONTENT_BUCKETS);
 
   const handleToggle = (id: string, enabled: boolean) => {
@@ -230,8 +277,8 @@ function ContentBucketsSection() {
   return (
     <Panel title="Content Buckets">
       <p className="mb-4 text-sm text-white/50">
-        AI-recommended content buckets based on current signals. Toggle buckets on to include in
-        the next agent run.
+        AI-recommended content buckets for {selectedProduct?.name ?? "your product"} based on
+        current signals. Toggle buckets on to include in the next agent run.
       </p>
       <div className="space-y-3">
         {buckets.map((bucket) => (
@@ -286,16 +333,28 @@ function CopyBlock({
 }
 
 function TikTokTab() {
+  const { selectedClient, selectedProduct, currentBenefit } = useApp();
+  const clientName = selectedClient?.name ?? "YouTheory";
+  const productName = selectedProduct?.name ?? "Collagen Peptides";
+
   return (
     <div className="space-y-4">
       <DraftMetaBadges />
-      <CopyBlock label="Hook (0–3 sec)" text={TIKTOK_DRAFT.hook} accent="text-[var(--green)]" />
+      <CopyBlock
+        label="Hook (0–3 sec)"
+        text={personalizeCopy(TIKTOK_DRAFT.hook, clientName, productName, currentBenefit)}
+        accent="text-[var(--green)]"
+      />
       <CopyBlock
         label="Script body (3–25 sec)"
-        text={TIKTOK_DRAFT.scriptBody}
+        text={personalizeCopy(TIKTOK_DRAFT.scriptBody, clientName, productName, currentBenefit)}
         accent="text-[var(--cyan)]"
       />
-      <CopyBlock label="CTA" text={TIKTOK_DRAFT.cta} accent="text-[var(--purple)]" />
+      <CopyBlock
+        label="CTA"
+        text={personalizeCopy(TIKTOK_DRAFT.cta, clientName, productName, currentBenefit)}
+        accent="text-[var(--purple)]"
+      />
 
       {/* INTEGRATION: tiktok_creative_center
           Toggle: Settings > Integrations > TikTok Creative Center
@@ -819,6 +878,7 @@ function DetailView() {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
       <div className="space-y-4 lg:col-span-2 lg:space-y-6">
+        <ContentAnglesSection />
         <ContentBucketsSection />
         <DraftCreativeSection />
         <DraftHistorySection />

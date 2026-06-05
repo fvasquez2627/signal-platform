@@ -21,6 +21,14 @@ export interface Client {
   name: string;
   brand_voice: string | null;
   compliance_notes: string | null;
+  brand_url?: string | null;
+  primary_category?: string | null;
+  target_demographic?: string | null;
+  primary_platforms?: string[] | null;
+  certifications?: string[] | null;
+  key_brand_claims?: string[] | null;
+  competitors?: string[] | null;
+  internal_notes?: string | null;
   created_at?: string;
 }
 
@@ -30,6 +38,22 @@ export interface Product {
   name: string;
   keywords: string[] | null;
   competitors: string[] | null;
+  target_demographic?: string | null;
+  primary_benefit?: string | null;
+  content_angles?: string[] | null;
+  seasonal_peaks?: string[] | null;
+  primary_platforms?: string[] | null;
+  product_url?: string | null;
+  brand_url?: string | null;
+  key_ingredients?: string[] | null;
+  approved_claims?: string[] | null;
+  restricted_claims?: string[] | null;
+  price_tier?: string | null;
+  internal_notes?: string | null;
+  tags?: string[] | null;
+  compliance_notes?: string | null;
+  competitor_sources?: Record<string, "auto" | "manual"> | null;
+  certifications?: string[] | null;
   created_at?: string;
 }
 

@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import { useApp } from "@/context/app-context";
+import { formatPlatformLabel, matchesCompetitorName } from "@/lib/product-utils";
 import {
   AGENTS,
   COMPETITORS,
@@ -388,8 +390,65 @@ function AgentPipelinePanel({ isDetail }: { isDetail: boolean }) {
   );
 }
 
+function TargetDemographicCard() {
+  const { currentDemographic } = useApp();
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+      <p className="font-mono-label text-[10px] font-medium uppercase tracking-widest text-white/45">
+        Target Demographic
+      </p>
+      <p className="mt-2 text-sm leading-relaxed text-white/80">{currentDemographic}</p>
+    </div>
+  );
+}
+
+function ProductIntelCard() {
+  const { currentBenefit, currentDemographic, currentPlatforms, currentPeaks } = useApp();
+
+  return (
+    <Panel title="Product Intel">
+      <dl className="space-y-3 text-sm">
+        <div>
+          <dt className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
+            Primary benefit
+          </dt>
+          <dd className="mt-1 text-white/80">{currentBenefit}</dd>
+        </div>
+        <div>
+          <dt className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
+            Target
+          </dt>
+          <dd className="mt-1 text-white/80">{currentDemographic}</dd>
+        </div>
+        <div>
+          <dt className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
+            Platforms
+          </dt>
+          <dd className="mt-1 text-white/80">
+            {currentPlatforms.map(formatPlatformLabel).join(" · ") || "—"}
+          </dd>
+        </div>
+        <div>
+          <dt className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
+            Seasonal peaks
+          </dt>
+          <dd className="mt-1 text-white/80">{currentPeaks.join(" · ") || "—"}</dd>
+        </div>
+      </dl>
+    </Panel>
+  );
+}
+
 function CompetitorWatchPanel({ isDetail }: { isDetail: boolean }) {
-  const list = isDetail ? COMPETITORS : COMPETITORS.slice(0, 3);
+  const { currentCompetitors } = useApp();
+  const list = useMemo(() => {
+    const filtered =
+      currentCompetitors.length === 0
+        ? COMPETITORS
+        : COMPETITORS.filter((c) => matchesCompetitorName(c.name, currentCompetitors));
+    return isDetail ? filtered : filtered.slice(0, 3);
+  }, [currentCompetitors, isDetail]);
 
   return (
     <Panel title="Competitor Watch">
@@ -565,6 +624,13 @@ export function DashboardOverview({ variant }: DashboardOverviewProps) {
       />
 
       <StatRow isDetail={isDetail} />
+
+      {isDetail && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <TargetDemographicCard />
+          <ProductIntelCard />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         <SignalFeedPanel isDetail={isDetail} />
