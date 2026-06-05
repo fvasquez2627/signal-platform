@@ -28,6 +28,10 @@ body {
   font-family: var(--font-syne), system-ui, sans-serif;
 }
 
+.font-mono-label {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
