@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { getNavItemsForRole } from "@/lib/navigation";
+import { getNavItemsForRole, isNavItemActive, ROUTES } from "@/lib/navigation";
 import { useApp } from "@/context/app-context";
 
 const navIcons: Record<string, string> = {
-  "/dashboard": "◉",
-  "/signals": "◎",
-  "/competitive": "⚔",
-  "/seo": "⌕",
-  "/content": "✎",
-  "/performance": "▲",
-  "/settings": "⚙",
+  [ROUTES.dashboard]: "◉",
+  [ROUTES.signals]: "◎",
+  [ROUTES.competitive]: "⚔",
+  [ROUTES.seo]: "⌕",
+  [ROUTES.content]: "✎",
+  [ROUTES.performance]: "▲",
+  [ROUTES.settings]: "⚙",
 };
 
 export function Sidebar() {
@@ -23,18 +23,21 @@ export function Sidebar() {
   return (
     <aside className="hidden md:flex md:w-56 md:flex-col md:border-r md:border-white/10 md:bg-[var(--bg)] lg:w-64">
       <div className="flex h-14 items-center gap-2 border-b border-white/10 px-4">
-        <span className="font-heading text-lg font-bold tracking-widest text-[var(--cyan)]">
+        <Link
+          href={ROUTES.dashboard}
+          className="font-heading text-lg font-bold tracking-widest text-[var(--cyan)] transition-opacity hover:opacity-80"
+        >
           SIGNAL
-        </span>
+        </Link>
       </div>
-      <nav className="flex-1 space-y-0.5 p-3">
+      <nav className="flex-1 space-y-0.5 p-3" aria-label="Main navigation">
         {items.map((item) => {
-          const active =
-            pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const active = isNavItemActive(pathname, item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                 active
                   ? "bg-[var(--cyan)]/15 text-[var(--cyan)]"

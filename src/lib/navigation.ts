@@ -7,66 +7,98 @@ export type NavItem = {
   description: string;
 };
 
+/** Canonical app routes — keep in sync with src/app/(app) route pages. */
+export const ROUTES = {
+  dashboard: "/dashboard",
+  signals: "/signals",
+  competitive: "/competitive",
+  seo: "/seo",
+  content: "/content",
+  performance: "/performance",
+  settings: "/settings",
+} as const;
+
 export const NAV_ITEMS: NavItem[] = [
   {
-    href: "/dashboard",
+    href: ROUTES.dashboard,
     label: "Overview",
     shortLabel: "Home",
     description: "High-level metrics and priorities",
   },
   {
-    href: "/signals",
-    label: "Signal Feed",
-    shortLabel: "Signals",
+    href: ROUTES.signals,
+    label: "Market Feed",
+    shortLabel: "Market",
     description: "Incoming intelligence across sources",
   },
   {
-    href: "/competitive",
+    href: ROUTES.competitive,
     label: "Competitive Intel",
     shortLabel: "Compete",
     description: "Competitor moves and positioning",
   },
   {
-    href: "/seo",
+    href: ROUTES.seo,
     label: "SEO + AEO",
     shortLabel: "SEO",
     description: "Search and answer-engine optimization",
   },
   {
-    href: "/content",
+    href: ROUTES.content,
     label: "Content Studio",
     shortLabel: "Content",
     description: "Drafts, hooks, and publishing workflow",
   },
   {
-    href: "/performance",
+    href: ROUTES.performance,
     label: "Performance",
     shortLabel: "Perf",
     description: "Content and campaign outcomes",
   },
   {
-    href: "/settings",
+    href: ROUTES.settings,
     label: "Settings",
     shortLabel: "Settings",
     description: "Account, integrations, and team",
   },
 ];
 
-const VIEWER_PATHS = new Set(["/dashboard"]);
-const MANAGER_EXCLUDED = new Set(["/settings"]);
+const SETTINGS_PATH = ROUTES.settings;
+
+/** Paths available to viewer and manager roles (all app pages except Settings). */
+const OPERATOR_PATHS = new Set(
+  NAV_ITEMS.filter((item) => item.href !== SETTINGS_PATH).map((item) => item.href),
+);
+
+export function normalizePathname(pathname: string): string {
+  const path = pathname.split("?")[0].split("#")[0];
+  if (path !== "/" && path.endsWith("/")) {
+    return path.slice(0, -1);
+  }
+  return path;
+}
+
+/** Active nav highlight — Overview is exact match on /dashboard only. */
+export function isNavItemActive(pathname: string, href: string): boolean {
+  const path = normalizePathname(pathname);
+  const base = normalizePathname(href);
+
+  if (base === ROUTES.dashboard) {
+    return path === ROUTES.dashboard;
+  }
+
+  return path === base || path.startsWith(base + "/");
+}
 
 export function getNavItemsForRole(role: UserRole): NavItem[] {
-  if (role === "viewer") {
-    return NAV_ITEMS.filter((item) => VIEWER_PATHS.has(item.href));
+  if (role === "admin") {
+    return NAV_ITEMS;
   }
-  if (role === "manager") {
-    return NAV_ITEMS.filter((item) => !MANAGER_EXCLUDED.has(item.href));
-  }
-  return NAV_ITEMS;
+  return NAV_ITEMS.filter((item) => OPERATOR_PATHS.has(item.href));
 }
 
 export function canAccessPath(role: UserRole, pathname: string): boolean {
-  const allowed = getNavItemsForRole(role).map((i) => i.href);
-  const base = allowed.find((href) => pathname === href || pathname.startsWith(`${href}/`));
-  return Boolean(base);
+  const path = normalizePathname(pathname);
+  const allowed = getNavItemsForRole(role).map((item) => item.href);
+  return allowed.some((href) => isNavItemActive(path, href));
 }

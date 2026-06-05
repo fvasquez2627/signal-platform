@@ -257,7 +257,7 @@ function SignalFeedPanel({ isDetail }: { isDetail: boolean }) {
 
   return (
     <Panel
-      title="Signal Feed"
+      title="Market Feed"
       action={
         <div className="flex flex-wrap gap-1">
           {filters.map((f) => (
