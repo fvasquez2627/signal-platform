@@ -8,6 +8,7 @@ create extension if not exists "uuid-ossp";
 create type public.user_role as enum ('admin', 'manager', 'viewer');
 create type public.signal_type as enum ('news', 'social', 'competitor', 'seo', 'trend', 'other');
 create type public.draft_status as enum ('draft', 'review', 'approved', 'published');
+-- Integration platform keys (see src/lib/integrations/config.ts)
 create type public.integration_platform as enum ('slack', 'hubspot', 'google_analytics', 'semrush', 'other');
 
 -- Profiles (extends auth.users)

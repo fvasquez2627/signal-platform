@@ -39,7 +39,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Features
 
 - **Supabase auth** — email/password login, protected routes, middleware redirect
-- **Role-based navigation** — admin (all), manager (no settings), viewer (overview only)
+- **Role-based navigation** — admin (all pages), manager & viewer (all except Settings)
 - **App shell** — sidebar (desktop), bottom nav (mobile), top bar with client/product selectors
 - **Summary / Detail toggle** — on every page
 - **Dark theme** — SIGNAL color palette with Syne + Instrument Sans fonts
@@ -70,4 +70,4 @@ supabase/
 |---------|--------------------------------------------|
 | admin   | All pages including Settings               |
 | manager | All except Settings                        |
-| viewer  | Overview (`/dashboard`) only               |
+| viewer  | All except Settings                        |

@@ -1,0 +1,116 @@
+export const TIKTOK_ADS = [
+  {
+    id: "1",
+    advertiser: "Vital Proteins",
+    handle: "@vitalproteins",
+    firstShown: "Jan 12, 2026",
+    lastShown: "Mar 4, 2026",
+    reach: "47K unique users",
+    demographics: "68% Female, 25-34",
+    daysRunning: "Running 43 days ⚡ Profitable",
+    hook: "I replaced my morning coffee with this collagen energy blend",
+    hookType: "Problem-Solution",
+    format: "UGC Video",
+    cta: "Shop Now",
+  },
+  {
+    id: "2",
+    advertiser: "Garden of Life",
+    handle: "@gardenoflife",
+    firstShown: "Feb 1, 2026",
+    lastShown: "Mar 5, 2026",
+    reach: "31K unique users",
+    demographics: "62% Female, 28-44",
+    daysRunning: "Running 28 days",
+    hook: "POV: your supplement drawer finally makes sense",
+    hookType: "POV",
+    format: "Reel",
+    cta: "Learn More",
+  },
+  {
+    id: "3",
+    advertiser: "Sports Research",
+    handle: "@sportsresearch",
+    firstShown: "Dec 8, 2025",
+    lastShown: "Mar 3, 2026",
+    reach: "22K unique users",
+    demographics: "55% Female, 35-54",
+    daysRunning: "Running 61 days ⚡ Profitable",
+    hook: "Clinically studied collagen — see the difference in 30 days",
+    hookType: "Authority",
+    format: "Testimonial",
+    cta: "Shop Link",
+  },
+  {
+    id: "4",
+    advertiser: "NeoCell",
+    handle: "@neocell",
+    firstShown: "Feb 18, 2026",
+    lastShown: "Mar 5, 2026",
+    reach: "18K unique users",
+    demographics: "71% Female, 25-34",
+    daysRunning: "Running 14 days",
+    hook: "Beauty starts from within — one scoop daily",
+    hookType: "Benefit-led",
+    format: "UGC Video",
+    cta: "Buy Now",
+  },
+];
+
+export const TIKTOK_SHOP_TRENDS = [
+  {
+    product: "Collagen Coffee Creamer Bundle",
+    category: "Wellness drinks",
+    velocity: "+840 units/wk",
+  },
+  {
+    product: "Marine Collagen Travel Pack",
+    category: "Supplements",
+    velocity: "+620 units/wk",
+  },
+  {
+    product: "Joint Support Gummies",
+    category: "Gummies",
+    velocity: "+410 units/wk",
+  },
+];
+
+export const META_AD_INTEL = [
+  {
+    id: "1",
+    competitor: "Vital Proteins",
+    copy: "New Collagen+ Energy — 3 reasons athletes are switching this month",
+    spendRange: "$12K–$18K",
+    daysRunning: 6,
+    platforms: ["Meta", "Instagram"],
+  },
+  {
+    id: "2",
+    competitor: "Garden of Life",
+    copy: "30-day ritual challenge — day 1 morning routine",
+    spendRange: "$5K–$9K",
+    daysRunning: 12,
+    platforms: ["Instagram"],
+  },
+  {
+    id: "3",
+    competitor: "Sports Research",
+    copy: "Clinically studied collagen peptides — see the label difference",
+    spendRange: "$3K–$6K",
+    daysRunning: 21,
+    platforms: ["Meta"],
+  },
+];
+
+export const AI_PATTERN_STATS = {
+  totalAds: 34,
+  hookPatterns: [
+    { label: "Problem-Solution", pct: 38 },
+    { label: "POV / Story", pct: 28 },
+    { label: "Authority / Clinical", pct: 18 },
+    { label: "Before/After", pct: 16 },
+  ],
+  avgVideoLength: "18–24 sec",
+  topCta: "Shop Now",
+  topFormat: "UGC Video",
+};

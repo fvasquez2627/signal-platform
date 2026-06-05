@@ -10,13 +10,6 @@ export type SignalType =
 
 export type DraftStatus = "draft" | "review" | "approved" | "published";
 
-export type IntegrationPlatform =
-  | "slack"
-  | "hubspot"
-  | "google_analytics"
-  | "semrush"
-  | "other";
-
 export interface Profile {
   id: string;
   role: UserRole;
@@ -66,7 +59,7 @@ export interface ContentDraft {
 export interface Integration {
   id: string;
   client_id: string;
-  platform: IntegrationPlatform;
+  platform: string;
   encrypted_key: string | null;
   connected: boolean;
   created_at?: string;

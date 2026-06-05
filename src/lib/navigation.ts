@@ -65,10 +65,13 @@ export const NAV_ITEMS: NavItem[] = [
 
 const SETTINGS_PATH = ROUTES.settings;
 
-/** Paths available to viewer and manager roles (all app pages except Settings). */
+/** App pages for viewer and manager (excludes Settings-only admin areas in the UI, not routing). */
 const OPERATOR_PATHS = new Set(
   NAV_ITEMS.filter((item) => item.href !== SETTINGS_PATH).map((item) => item.href),
 );
+
+/** Settings is reachable by all roles (integrations / platform connections). */
+const PATHS_WITH_SETTINGS = new Set([...OPERATOR_PATHS, SETTINGS_PATH]);
 
 export function normalizePathname(pathname: string): string {
   const path = pathname.split("?")[0].split("#")[0];
@@ -94,7 +97,7 @@ export function getNavItemsForRole(role: UserRole): NavItem[] {
   if (role === "admin") {
     return NAV_ITEMS;
   }
-  return NAV_ITEMS.filter((item) => OPERATOR_PATHS.has(item.href));
+  return NAV_ITEMS.filter((item) => PATHS_WITH_SETTINGS.has(item.href));
 }
 
 export function canAccessPath(role: UserRole, pathname: string): boolean {

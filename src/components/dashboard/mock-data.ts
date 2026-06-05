@@ -10,6 +10,7 @@ export type Signal = {
   title: string;
   body: string;
   tags: string[];
+  score?: number;
 };
 
 export type AgentStatus = {
@@ -34,12 +35,15 @@ export type PlatformMetric = {
   change: string;
   chart: number[];
   accent: "cyan" | "green" | "purple" | "yellow";
+  integrationKey:
+    | "tiktok_shop"
+    | "meta_business"
+    | "google_ads"
+    | null;
 };
 
-export const MOCK_ACCOUNT_CONNECTED = false;
-
 export const URGENT_ALERT = {
-  title: "Competitor launch detected — RivalCo shipped AI briefs",
+  title: "Competitor launch detected — Vital Proteins shipped Collagen+ Energy",
   subtitle: "High-priority threat · Score impact +14 · Action recommended within 24h",
 };
 
@@ -47,55 +51,61 @@ export const STAT_CARDS = {
   signalScore: 82,
   tiktokVelocity: "+34%",
   competitorMoves: 7,
-  draftsReady: 5,
-  gmv7Day: "$48.2K",
+  draftsReady: 12,
+  gmv7Day: "$48,200",
+  gmvSparkline: [4200, 5800, 6100, 7400, 8200, 9100, 7400],
 };
 
 export const SIGNALS: Signal[] = [
   {
     id: "1",
     type: "competitor",
-    source: "Competitive Intel",
+    source: "Meta Ad Library",
     timestamp: "12m ago",
-    title: "RivalCo launched AI content brief generator",
-    body: "New landing page positions against your core workflow. Pricing unchanged but feature parity gap widening on brief automation.",
-    tags: ["competitor", "product", "high-priority"],
+    title: "Vital Proteins scaled 47 new UGC creatives in 72h",
+    body: "Meta Ad Library shows Vital Proteins launched 47 new video creatives across US/CA. Primary hooks use problem-agitate-solution with creator-style UGC. Estimated weekly spend up 220% vs prior period.",
+    tags: ["competitor", "paid-social", "ugc", "high-priority"],
+    score: 94,
   },
   {
     id: "2",
     type: "opportunity",
     source: "TikTok Trends",
     timestamp: "38m ago",
-    title: "Hashtag #ShopWithAI trending +340% WoW",
-    body: "Velocity spike in your category. 12 creators in top 50 use product-demo format matching your draft templates.",
+    title: "Hashtag #CollagenCoffee trending +340% WoW",
+    body: "Velocity spike in wellness category. 12 creators in top 50 use coffee-ritual demo format matching your draft templates. Sound pairing opportunity detected.",
     tags: ["tiktok", "trend", "content"],
+    score: 88,
   },
   {
     id: "3",
     type: "threat",
-    source: "News Monitor",
+    source: "Google News",
     timestamp: "1h ago",
     title: "Category report flags rising CAC on paid social",
-    body: "Industry benchmark shows Meta CPC up 18% QoQ for DTC supplements. May compress ROAS on current creative rotation.",
+    body: "Industry benchmark shows Meta CPC up 18% QoQ for DTC supplements. May compress ROAS on current creative rotation without hook refresh.",
     tags: ["meta", "paid", "market"],
+    score: 83,
   },
   {
     id: "4",
     type: "awareness",
-    source: "SEO Pulse",
+    source: "PubMed",
     timestamp: "2h ago",
-    title: "New SERP feature: AI overview for brand queries",
-    body: "Google testing expanded AI summaries on 3 of your top 10 keywords. Monitor impression share this week.",
-    tags: ["seo", "google", "serp"],
+    title: "New RCT on collagen peptides for joint markers",
+    body: "PubMed indexed 12-week RCT (n=186) showing statistically significant joint comfort improvements. Study not yet widely cited in consumer content.",
+    tags: ["clinical", "ingredient", "credibility"],
+    score: 78,
   },
   {
     id: "5",
     type: "opportunity",
-    source: "Instagram Signals",
+    source: "Reddit",
     timestamp: "3h ago",
-    title: "Reel format outperforming carousel 2.1× on engagement",
-    body: "Your connected account shows reels driving 41% more saves. Agent queued 2 reel variants from top-performing hook.",
-    tags: ["instagram", "format", "content"],
+    title: "r/Supplements thread on mixability goes viral",
+    body: "1.2k upvotes discussing powder texture. Your SKU praised in top comments — insertion opportunity for educational comment strategy.",
+    tags: ["reddit", "community", "sentiment"],
+    score: 74,
   },
 ];
 
@@ -108,18 +118,18 @@ export const AGENTS: AgentStatus[] = [
 ];
 
 export const COMPETITORS: Competitor[] = [
-  { id: "1", name: "RivalCo", move: "AI briefs launch", threat: "critical" },
-  { id: "2", name: "NovaBrand", move: "TikTok Shop promo", threat: "high" },
-  { id: "3", name: "PeakLabs", move: "Pricing page update", threat: "medium" },
-  { id: "4", name: "Zenith Co", move: "New influencer cohort", threat: "medium" },
-  { id: "5", name: "BaseLine", move: "Blog SEO push", threat: "low" },
+  { id: "1", name: "Vital Proteins", move: "Collagen+ Energy SKU launch", threat: "critical" },
+  { id: "2", name: "Garden of Life", move: "TikTok creator push — 8 signed", threat: "high" },
+  { id: "3", name: "NeoCell", move: "Amazon reviews declining on taste", threat: "medium" },
+  { id: "4", name: "Sports Research", move: "Google Shopping bids +22%", threat: "medium" },
+  { id: "5", name: "Ancient Nutrition", move: "Quiet period — no launches", threat: "low" },
 ];
 
 export const DRAFT_CREATIVE = {
   platform: "TikTok",
-  hook: "POV: your competitor just dropped AI briefs and you're still writing hooks manually",
-  body: "We tested 47 hooks in 72 hours. This format won — problem → twist → product proof in under 8 seconds.",
-  cta: "Link in bio · Shop the bundle · Limited drop ends Sunday",
+  hook: "POV: you found out your morning coffee was missing one ingredient this whole time 👀",
+  body: "Collagen peptides dissolve instantly — you won't taste a thing. But your skin, joints, and hair will feel it in 30 days.",
+  cta: "Shop the link → 20% off today only. Comment COFFEE for the link.",
 };
 
 export const PLATFORMS: PlatformMetric[] = [
@@ -127,37 +137,41 @@ export const PLATFORMS: PlatformMetric[] = [
     id: "tiktok",
     name: "TikTok Shop",
     metric: "GMV (7d)",
-    value: "$48.2K",
-    change: "+12.4%",
+    value: "$22,400",
+    change: "+18%",
     chart: [40, 55, 48, 62, 58, 71, 68],
     accent: "cyan",
+    integrationKey: "tiktok_shop",
   },
   {
     id: "meta",
     name: "Meta",
     metric: "ROAS",
-    value: "3.2×",
+    value: "3.8×",
     change: "-0.4×",
     chart: [72, 68, 65, 60, 58, 55, 52],
     accent: "purple",
+    integrationKey: "meta_business",
   },
   {
     id: "instagram",
     name: "Instagram",
-    metric: "Engagement rate",
-    value: "4.8%",
-    change: "+0.6%",
+    metric: "Reach",
+    value: "184K",
+    change: "+32%",
     chart: [30, 35, 38, 42, 45, 48, 50],
     accent: "green",
+    integrationKey: "meta_business",
   },
   {
     id: "google",
     name: "Google",
-    metric: "Organic clicks",
-    value: "12.4K",
-    change: "+8.1%",
+    metric: "Impressions",
+    value: "91K",
+    change: "+9%",
     chart: [50, 52, 54, 56, 58, 60, 62],
     accent: "yellow",
+    integrationKey: "google_ads",
   },
 ];
 

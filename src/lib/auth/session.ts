@@ -20,7 +20,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single<{ role: UserRole }>();
+    .maybeSingle<{ role: UserRole }>();
 
   return {
     user,

@@ -5,7 +5,6 @@ import {
   AGENTS,
   COMPETITORS,
   DRAFT_CREATIVE,
-  MOCK_ACCOUNT_CONNECTED,
   PLATFORMS,
   SIGNAL_BORDER,
   SIGNALS,
@@ -15,6 +14,7 @@ import {
   PLATFORM_ACCENT,
   type SignalFilter,
 } from "@/components/dashboard/mock-data";
+import { IntegrationSection } from "@/components/integrations/integration-section";
 
 type DashboardOverviewProps = {
   variant: "summary" | "detail";
@@ -175,12 +175,14 @@ function StatCard({
   sub,
   ring,
   locked,
+  lockedMessage,
 }: {
   label: string;
   value: ReactNode;
   sub?: string;
   ring?: number;
   locked?: boolean;
+  lockedMessage?: string;
 }) {
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
@@ -190,7 +192,9 @@ function StatCard({
       <div className="mt-2 flex items-center justify-between gap-2">
         <div className="min-w-0">
           {locked ? (
-            <p className="text-sm font-medium text-white/40">Connect to unlock</p>
+            <p className="text-sm font-medium text-white/40">
+              {lockedMessage ?? "Connect to unlock"}
+            </p>
           ) : (
             <p className="font-mono-label text-xl font-semibold text-white sm:text-2xl">
               {value}
@@ -203,6 +207,42 @@ function StatCard({
         {ring !== undefined && !locked && <ScoreRing score={ring} size={48} stroke={3} />}
       </div>
     </div>
+  );
+}
+
+function GmvSparkline({ values }: { values: number[] }) {
+  const max = Math.max(...values, 1);
+  return (
+    <div className="mt-2 flex h-8 items-end gap-0.5">
+      {values.map((v, i) => (
+        <div
+          key={i}
+          className="flex-1 rounded-sm bg-[var(--cyan)]"
+          style={{ height: `${(v / max) * 100}%`, opacity: 0.75 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function GmvStatCard({ isDetail }: { isDetail: boolean }) {
+  return (
+    <IntegrationSection integration="tiktok_shop">
+      <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+        <p className="font-mono-label text-[10px] font-medium uppercase tracking-widest text-white/45">
+          GMV 7-Day
+        </p>
+        <p className="mt-2 font-mono-label text-xl font-semibold text-white sm:text-2xl">
+          {STAT_CARDS.gmv7Day}
+        </p>
+        {isDetail && (
+          <>
+            <p className="mt-0.5 text-xs text-[var(--green)]">↑ 18% vs last week</p>
+            <GmvSparkline values={STAT_CARDS.gmvSparkline} />
+          </>
+        )}
+      </div>
+    </IntegrationSection>
   );
 }
 
@@ -230,12 +270,7 @@ function StatRow({ isDetail }: { isDetail: boolean }) {
         value={STAT_CARDS.draftsReady}
         sub={isDetail ? "Awaiting review" : undefined}
       />
-      <StatCard
-        label="GMV 7-Day"
-        value={STAT_CARDS.gmv7Day}
-        sub={isDetail ? "TikTok Shop connected" : undefined}
-        locked={!MOCK_ACCOUNT_CONNECTED}
-      />
+      <GmvStatCard isDetail={isDetail} />
     </div>
   );
 }
@@ -448,49 +483,68 @@ function DraftCreativePanel({ condensed }: { condensed?: boolean }) {
   );
 }
 
-function PlatformPerformance({ isDetail }: { isDetail: boolean }) {
-  const locked = !MOCK_ACCOUNT_CONNECTED;
+function PlatformMetrics({
+  platform,
+  isDetail,
+}: {
+  platform: (typeof PLATFORMS)[number];
+  isDetail: boolean;
+}) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
+      <p className="font-heading text-sm font-semibold text-white">{platform.name}</p>
+      <p className="font-mono-label mt-2 text-[10px] uppercase tracking-widest text-white/40">
+        {platform.metric}
+      </p>
+      <p
+        className={`font-mono-label mt-1 text-lg font-semibold ${PLATFORM_ACCENT[platform.accent]}`}
+      >
+        {platform.value}
+      </p>
+      <p
+        className={`font-mono-label text-xs ${
+          platform.change.startsWith("+")
+            ? "text-[var(--green)]"
+            : "text-[var(--red)]"
+        }`}
+      >
+        {platform.change}
+      </p>
+      {isDetail && (
+        <div className="mt-3">
+          <MiniBarChart values={platform.chart} accent={platform.accent} />
+        </div>
+      )}
+    </div>
+  );
+}
 
+function PlatformCard({
+  platform,
+  isDetail,
+}: {
+  platform: (typeof PLATFORMS)[number];
+  isDetail: boolean;
+}) {
+  const integrationKey = platform.integrationKey;
+
+  const content = (
+    <PlatformMetrics platform={platform} isDetail={isDetail} />
+  );
+
+  if (!integrationKey) return content;
+
+  return (
+    <IntegrationSection integration={integrationKey}>{content}</IntegrationSection>
+  );
+}
+
+function PlatformPerformance({ isDetail }: { isDetail: boolean }) {
   return (
     <Panel title="Platform Performance">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {PLATFORMS.map((platform) => (
-          <div
-            key={platform.id}
-            className="rounded-lg border border-white/10 bg-white/[0.03] p-3"
-          >
-            <p className="font-heading text-sm font-semibold text-white">
-              {platform.name}
-            </p>
-            <p className="font-mono-label mt-2 text-[10px] uppercase tracking-widest text-white/40">
-              {platform.metric}
-            </p>
-            {locked ? (
-              <p className="mt-2 text-sm text-white/40">Connect to unlock</p>
-            ) : (
-              <>
-                <p
-                  className={`font-mono-label mt-1 text-lg font-semibold ${PLATFORM_ACCENT[platform.accent]}`}
-                >
-                  {platform.value}
-                </p>
-                <p
-                  className={`font-mono-label text-xs ${
-                    platform.change.startsWith("+")
-                      ? "text-[var(--green)]"
-                      : "text-[var(--red)]"
-                  }`}
-                >
-                  {platform.change}
-                </p>
-                {isDetail && (
-                  <div className="mt-3">
-                    <MiniBarChart values={platform.chart} accent={platform.accent} />
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+          <PlatformCard key={platform.id} platform={platform} isDetail={isDetail} />
         ))}
       </div>
     </Panel>

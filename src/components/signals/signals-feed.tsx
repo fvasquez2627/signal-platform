@@ -19,6 +19,7 @@ import {
   type DetailFilter,
   type FeedSignal,
 } from "@/components/signals/mock-data";
+import { SignalsIntelExtras } from "@/components/signals/signals-intel-extras";
 
 type SignalsFeedProps = {
   variant: "summary" | "detail";
@@ -360,23 +361,20 @@ function DetailView() {
   );
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
-      <div className="space-y-4 lg:col-span-2 lg:space-y-6">
-        <FilterBar active={filter} onChange={setFilter} />
-        <ScoreSummaryRow />
-        <div className="space-y-4">
-          {filtered.length === 0 ? (
-            <p className="rounded-xl border border-white/10 bg-white/[0.02] p-6 text-center text-sm text-white/45">
-              No signals match this filter.
-            </p>
-          ) : (
-            filtered.map((signal) => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+        <div className="space-y-4 lg:col-span-2 lg:space-y-6">
+          <FilterBar active={filter} onChange={setFilter} />
+          <ScoreSummaryRow />
+          <div className="space-y-4">
+            {filtered.map((signal) => (
               <SignalCard key={signal.id} signal={signal} />
-            ))
-          )}
+            ))}
+          </div>
         </div>
+        <DetailSidebar />
       </div>
-      <DetailSidebar />
+      <SignalsIntelExtras />
     </div>
   );
 }

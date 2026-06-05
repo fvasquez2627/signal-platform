@@ -33,11 +33,16 @@ export async function updateSession(request: NextRequest) {
 
   let role: UserRole | null = null;
   if (user) {
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
-      .single<{ role: UserRole }>();
+      .maybeSingle<{ role: UserRole }>();
+
+    if (error) {
+      console.warn("profiles role lookup:", error.message);
+    }
+
     role = profile?.role ?? "viewer";
   }
 
