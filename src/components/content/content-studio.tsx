@@ -2,80 +2,35 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { useApp } from "@/context/app-context";
+import { AiPromptsDraftTab } from "@/components/content/ai-prompts-draft-tab";
+import {
+  CopyBlock,
+  DraftActions,
+  Panel,
+  SignalBadges,
+} from "@/components/content/content-studio-shared";
+import { GoogleDraftTab } from "@/components/content/google-draft-tab";
+import { MetaDraftTab } from "@/components/content/meta-draft-tab";
 import {
   ACTIVE_DRAFT,
-  AI_PROMPTS_DRAFT,
   BUCKET_HEALTH,
   BUCKET_STATUS_STYLES,
   CONTENT_BUCKETS,
   DRAFT_HISTORY,
   DRAFT_STATUS_STYLES,
   GENERATION_STATS,
-  GOOGLE_DRAFT,
-  META_DRAFT,
   PLATFORM_TABS,
-  SPARK_AD_DRAFT,
   SUMMARY,
   TIKTOK_DRAFT,
   type ContentBucket,
-  type HistoryPlatformFilter,
   type HistoryStatusFilter,
   type PlatformTab,
 } from "@/components/content/mock-data";
+import { SparkAdDraftTab } from "@/components/content/spark-ad-draft-tab";
 
 type ContentStudioProps = {
   variant: "summary" | "detail";
 };
-
-function Panel({
-  title,
-  action,
-  children,
-  className = "",
-}: {
-  title: string;
-  action?: ReactNode;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <section
-      className={`rounded-xl border border-white/10 bg-white/[0.02] ${className}`}
-    >
-      <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
-        <h2 className="font-heading text-sm font-semibold tracking-wide text-white">
-          {title}
-        </h2>
-        {action}
-      </div>
-      <div className="p-4">{children}</div>
-    </section>
-  );
-}
-
-function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard unavailable */
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="rounded-md border border-white/15 px-2 py-0.5 font-mono-label text-[10px] uppercase tracking-wide text-white/50 transition-colors hover:bg-white/5 hover:text-white/80"
-    >
-      {copied ? "Copied" : label}
-    </button>
-  );
-}
 
 function ToggleSwitch({
   checked,
@@ -104,6 +59,23 @@ function ToggleSwitch({
       />
     </button>
   );
+}
+
+function personalizeCopy(
+  text: string,
+  clientName: string,
+  productName: string,
+  benefit: string,
+): string {
+  const product = productName === "All Products" ? "wellness supplements" : productName;
+  return text
+    .replace(/YouTheory/g, clientName)
+    .replace(/Collagen Peptides/g, product)
+    .replace(/collagen peptides/gi, product.toLowerCase())
+    .replace(
+      /Skin elasticity, joint support, hair and nail strength/g,
+      benefit,
+    );
 }
 
 function SummaryView() {
@@ -144,15 +116,12 @@ function SummaryView() {
         <p className="mt-3 font-mono-label text-[10px] text-white/35">
           Source · {SUMMARY.signalSource}
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setApproved(true)}
-            disabled={approved}
-            className="rounded-lg bg-[var(--green)] px-4 py-2 text-xs font-semibold text-[var(--bg)] transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
-            {approved ? "Approved ✓" : "Quick Approve"}
-          </button>
+        <div className="mt-4">
+          <DraftActions
+            approveLabel="Quick Approve"
+            onApprove={() => setApproved(true)}
+            approved={approved}
+          />
         </div>
       </Panel>
     </div>
@@ -245,23 +214,6 @@ function ContentAnglesSection() {
   );
 }
 
-function personalizeCopy(
-  text: string,
-  clientName: string,
-  productName: string,
-  benefit: string,
-): string {
-  const product = productName === "All Products" ? "wellness supplements" : productName;
-  return text
-    .replace(/YouTheory/g, clientName)
-    .replace(/Collagen Peptides/g, product)
-    .replace(/collagen peptides/gi, product.toLowerCase())
-    .replace(
-      /Skin elasticity, joint support, hair and nail strength/g,
-      benefit,
-    );
-}
-
 function ContentBucketsSection() {
   const { selectedProduct } = useApp();
   const [buckets, setBuckets] = useState(CONTENT_BUCKETS);
@@ -294,52 +246,15 @@ function ContentBucketsSection() {
   );
 }
 
-function DraftMetaBadges() {
-  return (
-    <div className="mb-4 flex flex-wrap gap-2">
-      <span className="rounded-md bg-white/5 px-2 py-0.5 font-mono-label text-[10px] uppercase tracking-wide text-white/55">
-        {ACTIVE_DRAFT.signalSource}
-      </span>
-      <span className="rounded-md bg-[var(--purple)]/15 px-2 py-0.5 font-mono-label text-[10px] uppercase tracking-wide text-[var(--purple)]">
-        {ACTIVE_DRAFT.bucket}
-      </span>
-      <span className="font-mono-label text-[10px] text-white/35">
-        Generated {ACTIVE_DRAFT.generatedAt}
-      </span>
-    </div>
-  );
-}
-
-function CopyBlock({
-  label,
-  text,
-  accent,
-}: {
-  label: string;
-  text: string;
-  accent: string;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between gap-2">
-        <p className={`font-mono-label text-[10px] uppercase tracking-widest ${accent}`}>
-          {label}
-        </p>
-        <CopyButton text={text} />
-      </div>
-      <p className="mt-1.5 text-sm leading-relaxed text-white/75">{text}</p>
-    </div>
-  );
-}
-
 function TikTokTab() {
   const { selectedClient, selectedProduct, currentBenefit } = useApp();
+  const [approved, setApproved] = useState(false);
   const clientName = selectedClient?.name ?? "YouTheory";
   const productName = selectedProduct?.name ?? "Collagen Peptides";
 
   return (
     <div className="space-y-4">
-      <DraftMetaBadges />
+      <SignalBadges signalSource={ACTIVE_DRAFT.signalSource} bucket={ACTIVE_DRAFT.bucket} />
       <CopyBlock
         label="Hook (0–3 sec)"
         text={personalizeCopy(TIKTOK_DRAFT.hook, clientName, productName, currentBenefit)}
@@ -349,17 +264,13 @@ function TikTokTab() {
         label="Script body (3–25 sec)"
         text={personalizeCopy(TIKTOK_DRAFT.scriptBody, clientName, productName, currentBenefit)}
         accent="text-[var(--cyan)]"
+        multiline
       />
       <CopyBlock
         label="CTA"
         text={personalizeCopy(TIKTOK_DRAFT.cta, clientName, productName, currentBenefit)}
         accent="text-[var(--purple)]"
       />
-
-      {/* INTEGRATION: tiktok_creative_center
-          Toggle: Settings > Integrations > TikTok Creative Center
-          When OFF: hide this entire section
-          When ON: replace mock data with real API data */}
       <div className="rounded-lg border border-[var(--cyan)]/20 bg-[var(--cyan)]/5 px-4 py-3">
         <p className="font-mono-label text-[10px] uppercase tracking-widest text-[var(--cyan)]">
           Trending sound pairing
@@ -371,278 +282,7 @@ function TikTokTab() {
           {TIKTOK_DRAFT.sound.videoCount}
         </p>
       </div>
-
-      <DraftActions />
-    </div>
-  );
-}
-
-function MetaTab() {
-  return (
-    <div className="space-y-4">
-      <DraftMetaBadges />
-      <div>
-        <p className="font-mono-label text-[10px] uppercase tracking-widest text-[var(--green)]">
-          Headlines
-        </p>
-        <ul className="mt-2 space-y-2">
-          {META_DRAFT.headlines.map((h, i) => (
-            <li
-              key={i}
-              className="flex items-center justify-between gap-2 rounded-lg bg-white/[0.03] px-3 py-2"
-            >
-              <span className="text-sm text-white/75">{h.text}</span>
-              <span className="shrink-0 font-mono-label text-[10px] text-white/35">
-                {h.chars} chars
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <CopyBlock
-        label="Primary text"
-        text={META_DRAFT.primaryText}
-        accent="text-[var(--cyan)]"
-      />
-      <CopyBlock label="Description" text={META_DRAFT.description} accent="text-[var(--purple)]" />
-      <div>
-        <p className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
-          CTA button options
-        </p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {META_DRAFT.ctaOptions.map((cta) => (
-            <span
-              key={cta}
-              className="rounded-md border border-white/15 px-3 py-1 text-xs text-white/70"
-            >
-              {cta}
-            </span>
-          ))}
-        </div>
-      </div>
-      <p className="font-mono-label text-xs text-white/45">
-        Recommended format ·{" "}
-        <span className="text-[var(--cyan)]">{META_DRAFT.recommendedFormat}</span>
-      </p>
-      <DraftActions showSaveDraft={false} />
-    </div>
-  );
-}
-
-function GoogleTab() {
-  const headlineLimit = 30;
-  const descLimit = 90;
-
-  return (
-    <div className="space-y-4">
-      <DraftMetaBadges />
-      <p className="font-mono-label text-xs text-white/45">
-        Display URL ·{" "}
-        <span className="text-[var(--cyan)]">{GOOGLE_DRAFT.displayUrl}</span>
-      </p>
-      <div>
-        <p className="font-mono-label text-[10px] uppercase tracking-widest text-[var(--green)]">
-          Headlines ({headlineLimit} char max)
-        </p>
-        <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
-          {GOOGLE_DRAFT.headlines.map((h, i) => {
-            const len = h.length;
-            const over = len > headlineLimit;
-            return (
-              <li
-                key={i}
-                className="flex items-center justify-between gap-2 rounded bg-white/[0.03] px-2 py-1.5 text-sm"
-              >
-                <span className={over ? "text-[var(--red)]" : "text-white/75"}>{h}</span>
-                <span
-                  className={`shrink-0 font-mono-label text-[10px] ${over ? "text-[var(--red)]" : "text-white/35"}`}
-                >
-                  {len}/{headlineLimit}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-      <div>
-        <p className="font-mono-label text-[10px] uppercase tracking-widest text-[var(--cyan)]">
-          Descriptions ({descLimit} char max)
-        </p>
-        <ul className="mt-2 space-y-2">
-          {GOOGLE_DRAFT.descriptions.map((d, i) => {
-            const len = d.length;
-            const over = len > descLimit;
-            return (
-              <li
-                key={i}
-                className="rounded-lg bg-white/[0.03] px-3 py-2 text-sm text-white/75"
-              >
-                <p className={over ? "text-[var(--red)]" : undefined}>{d}</p>
-                <p
-                  className={`mt-1 font-mono-label text-[10px] ${over ? "text-[var(--red)]" : "text-white/35"}`}
-                >
-                  {len}/{descLimit}
-                </p>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-      <DraftActions showSaveDraft={false} />
-    </div>
-  );
-}
-
-function AiPromptsTab() {
-  return (
-    <div className="space-y-4">
-      <DraftMetaBadges />
-      <CopyBlock
-        label="Video prompt (Veo / Runway)"
-        text={AI_PROMPTS_DRAFT.videoPrompt}
-        accent="text-[var(--green)]"
-      />
-      <CopyBlock
-        label="Image prompt (Midjourney / Flux)"
-        text={AI_PROMPTS_DRAFT.imagePrompt}
-        accent="text-[var(--cyan)]"
-      />
-      <CopyBlock
-        label="Scene direction"
-        text={AI_PROMPTS_DRAFT.sceneDirection}
-        accent="text-[var(--purple)]"
-      />
-      <CopyBlock
-        label="VO script"
-        text={AI_PROMPTS_DRAFT.voScript}
-        accent="text-[var(--yellow)]"
-      />
-      <DraftActions showSaveDraft={false} />
-    </div>
-  );
-}
-
-function SparkAdTab() {
-  const fullBrief = [
-    SPARK_AD_DRAFT.briefTitle,
-    "",
-    "KEY TALKING POINTS",
-    ...SPARK_AD_DRAFT.talkingPoints.map((p) => `• ${p}`),
-    "",
-    "DO'S",
-    ...SPARK_AD_DRAFT.dos.map((d) => `✓ ${d}`),
-    "",
-    "DON'TS",
-    ...SPARK_AD_DRAFT.donts.map((d) => `✗ ${d}`),
-    "",
-    "HASHTAGS",
-    SPARK_AD_DRAFT.hashtags.join(" "),
-    "",
-    "PRODUCT TALKING POINTS",
-    ...SPARK_AD_DRAFT.productPoints.map((p) => `• ${p}`),
-  ].join("\n");
-
-  return (
-    <div className="space-y-4">
-      <DraftMetaBadges />
-      <p className="font-heading text-sm font-semibold text-white">{SPARK_AD_DRAFT.briefTitle}</p>
-
-      <div>
-        <p className="font-mono-label text-[10px] uppercase tracking-widest text-[var(--green)]">
-          Key talking points
-        </p>
-        <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-white/75">
-          {SPARK_AD_DRAFT.talkingPoints.map((p) => (
-            <li key={p}>{p}</li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <p className="font-mono-label text-[10px] uppercase tracking-widest text-[var(--green)]">
-            Do&apos;s
-          </p>
-          <ul className="mt-2 space-y-1 text-sm text-white/70">
-            {SPARK_AD_DRAFT.dos.map((d) => (
-              <li key={d}>✓ {d}</li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <p className="font-mono-label text-[10px] uppercase tracking-widest text-[var(--red)]">
-            Don&apos;ts
-          </p>
-          <ul className="mt-2 space-y-1 text-sm text-white/70">
-            {SPARK_AD_DRAFT.donts.map((d) => (
-              <li key={d}>✗ {d}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      <div>
-        <p className="font-mono-label text-[10px] uppercase tracking-widest text-[var(--cyan)]">
-          Hashtag recommendations
-        </p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {SPARK_AD_DRAFT.hashtags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded bg-white/5 px-2 py-0.5 font-mono-label text-[10px] text-[var(--cyan)]"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <p className="font-mono-label text-[10px] uppercase tracking-widest text-[var(--purple)]">
-          Product talking points
-        </p>
-        <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-white/75">
-          {SPARK_AD_DRAFT.productPoints.map((p) => (
-            <li key={p}>{p}</li>
-          ))}
-        </ul>
-      </div>
-
-      <CopyButton text={fullBrief} label="Copy Full Brief" />
-      <DraftActions showSaveDraft={false} />
-    </div>
-  );
-}
-
-function DraftActions({ showSaveDraft = true }: { showSaveDraft?: boolean }) {
-  return (
-    <div className="flex flex-wrap gap-2 border-t border-white/10 pt-4">
-      <button
-        type="button"
-        className="rounded-lg bg-[var(--green)] px-3 py-1.5 text-xs font-semibold text-[var(--bg)] hover:opacity-90"
-      >
-        Approve
-      </button>
-      <button
-        type="button"
-        className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/70 hover:bg-white/5"
-      >
-        Regenerate
-      </button>
-      <button
-        type="button"
-        className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/70 hover:bg-white/5"
-      >
-        Edit
-      </button>
-      {showSaveDraft && (
-        <button
-          type="button"
-          className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/70 hover:bg-white/5"
-        >
-          Save Draft
-        </button>
-      )}
+      <DraftActions onApprove={() => setApproved(true)} approved={approved} />
     </div>
   );
 }
@@ -652,29 +292,31 @@ function DraftCreativeSection() {
 
   const tabContent: Record<PlatformTab, ReactNode> = {
     tiktok: <TikTokTab />,
-    meta: <MetaTab />,
-    google: <GoogleTab />,
-    ai_prompts: <AiPromptsTab />,
-    spark_ad: <SparkAdTab />,
+    meta: <MetaDraftTab />,
+    google: <GoogleDraftTab />,
+    ai_prompts: <AiPromptsDraftTab />,
+    spark_ad: <SparkAdDraftTab />,
   };
 
   return (
     <Panel title="Draft Creative">
-      <div className="mb-4 flex flex-wrap gap-1 border-b border-white/10 pb-3">
-        {PLATFORM_TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`rounded-md px-3 py-1.5 font-mono-label text-[10px] uppercase tracking-wide transition-colors ${
-              tab === t.id
-                ? "bg-[var(--cyan)]/20 text-[var(--cyan)]"
-                : "text-white/40 hover:text-white/70"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="-mx-1 mb-4 overflow-x-auto px-1 pb-1">
+        <div className="flex min-w-max gap-1 border-b border-white/10 pb-3">
+          {PLATFORM_TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`shrink-0 rounded-md px-3 py-1.5 font-mono-label text-[10px] uppercase tracking-wide transition-colors ${
+                tab === t.id
+                  ? "bg-[var(--cyan)]/20 text-[var(--cyan)]"
+                  : "text-white/40 hover:text-white/70"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
       {tabContent[tab]}
     </Panel>
@@ -682,32 +324,16 @@ function DraftCreativeSection() {
 }
 
 function DraftHistorySection() {
-  const [platformFilter, setPlatformFilter] = useState<HistoryPlatformFilter>("all");
   const [statusFilter, setStatusFilter] = useState<HistoryStatusFilter>("all");
 
-  const platforms: HistoryPlatformFilter[] = [
-    "all",
-    "TikTok",
-    "Meta",
-    "Google",
-    "AI Prompts",
-    "Spark Ad",
-  ];
-  const statuses: HistoryStatusFilter[] = [
-    "all",
-    "pending",
-    "approved",
-    "rejected",
-    "published",
-  ];
+  const statuses: HistoryStatusFilter[] = ["all", "approved", "pending", "rejected"];
 
   const filtered = useMemo(() => {
     return DRAFT_HISTORY.filter((row) => {
-      if (platformFilter !== "all" && row.platform !== platformFilter) return false;
       if (statusFilter !== "all" && row.status !== statusFilter) return false;
       return true;
     });
-  }, [platformFilter, statusFilter]);
+  }, [statusFilter]);
 
   return (
     <Panel
@@ -718,51 +344,31 @@ function DraftHistorySection() {
         </span>
       }
     >
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="flex flex-wrap gap-1">
-          {platforms.map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setPlatformFilter(p)}
-              className={`rounded-md px-2 py-0.5 font-mono-label text-[10px] uppercase tracking-wide transition-colors ${
-                platformFilter === p
-                  ? "bg-[var(--cyan)]/20 text-[var(--cyan)]"
-                  : "text-white/40 hover:text-white/70"
-              }`}
-            >
-              {p === "all" ? "All platforms" : p}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {statuses.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setStatusFilter(s)}
-              className={`rounded-md px-2 py-0.5 font-mono-label text-[10px] uppercase tracking-wide transition-colors ${
-                statusFilter === s
-                  ? "bg-[var(--purple)]/20 text-[var(--purple)]"
-                  : "text-white/40 hover:text-white/70"
-              }`}
-            >
-              {s === "all" ? "All statuses" : s}
-            </button>
-          ))}
-        </div>
+      <div className="mb-4 flex flex-wrap gap-1">
+        {statuses.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setStatusFilter(s)}
+            className={`rounded-md px-2 py-0.5 font-mono-label text-[10px] uppercase tracking-wide transition-colors ${
+              statusFilter === s
+                ? "bg-[var(--purple)]/20 text-[var(--purple)]"
+                : "text-white/40 hover:text-white/70"
+            }`}
+          >
+            {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+          </button>
+        ))}
       </div>
 
       <div className="-mx-4 overflow-x-auto px-4">
-        <table className="w-full min-w-[640px] text-left text-sm">
+        <table className="w-full min-w-[520px] text-left text-sm">
           <thead>
             <tr className="border-b border-white/10 font-mono-label text-[10px] uppercase tracking-wide text-white/40">
               <th className="pb-2 pr-4 font-medium">Date</th>
               <th className="pb-2 pr-4 font-medium">Platform</th>
               <th className="pb-2 pr-4 font-medium">Bucket</th>
-              <th className="pb-2 pr-4 font-medium">Signal</th>
               <th className="pb-2 pr-4 font-medium">Status</th>
-              <th className="pb-2 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -771,21 +377,12 @@ function DraftHistorySection() {
                 <td className="py-2.5 pr-4 font-mono-label text-xs text-white/50">{row.date}</td>
                 <td className="py-2.5 pr-4">{row.platform}</td>
                 <td className="py-2.5 pr-4">{row.bucket}</td>
-                <td className="py-2.5 pr-4 text-white/55">{row.signalSource}</td>
                 <td className="py-2.5 pr-4">
                   <span
                     className={`rounded px-2 py-0.5 font-mono-label text-[10px] uppercase tracking-wide ${DRAFT_STATUS_STYLES[row.status]}`}
                   >
                     {row.status}
                   </span>
-                </td>
-                <td className="py-2.5">
-                  <button
-                    type="button"
-                    className="font-mono-label text-[10px] uppercase tracking-wide text-[var(--cyan)] hover:underline"
-                  >
-                    View
-                  </button>
                 </td>
               </tr>
             ))}

@@ -100,7 +100,7 @@ export const CONTENT_BUCKETS: ContentBucket[] = [
 
 export const ACTIVE_DRAFT = {
   bucket: "Trend Response",
-  signalSource: "TikTok Trends",
+  signalSource: "TikTok Trends → Meta",
   generatedAt: "Today 6:02 AM",
 };
 
@@ -116,82 +116,167 @@ export const TIKTOK_DRAFT = {
 };
 
 export const META_DRAFT = {
-  headlines: [
-    { text: "Collagen That Dissolves in Coffee", chars: 33 },
-    { text: "Your Morning Coffee, Upgraded", chars: 29 },
-    { text: "YouTheory Collagen — 30 Days", chars: 30 },
-  ],
-  primaryText:
-    "One scoop. Zero taste. Real results in 30 days. YouTheory Collagen peptides dissolve instantly in hot or iced coffee — no clumps, no weird flavor. Join 2M+ customers who've made collagen part of their morning ritual. Clinically studied peptides for skin, joints, and hair. Shop now and save 20% on your first order.",
-  description: "Premium collagen peptides. Dissolves instantly. 20% off today.",
-  ctaOptions: ["Shop Now", "Learn More", "Get Offer"],
-  recommendedFormat: "Reels",
+  signalSource: "TikTok Trends → Meta",
+  bucket: "Trend Response",
+  variantA: {
+    label: "Variant A — Reels Format",
+    primaryText:
+      "Your morning coffee ritual is missing something. YouTheory Collagen peptides dissolve instantly — no taste, no clumps. Just results you'll feel in 30 days. Skin, joints, hair. All of it.\nShop now → link in bio",
+    headlines: [
+      "The Morning Upgrade You're Missing",
+      "Collagen That Actually Works",
+      "30 Days to Visible Results",
+    ],
+    description: "Type 1, 2 & 3 Collagen Peptides. Unflavored. Dissolves instantly.",
+    cta: "Shop Now",
+    format: "Reels (9:16)",
+    audience: "Women 28-45, US",
+  },
+  variantB: {
+    label: "Variant B — Carousel Format",
+    primaryText: "5 signs your body needs more collagen (most people miss #3) 👇",
+    slides: [
+      "Your skin feels less firm",
+      "Joint stiffness in the morning",
+      "Hair feels thinner or breaks",
+      "Nails chip and break constantly",
+      "You're over 25 — collagen drops 1% per year after this age",
+    ],
+    headline: "Fix It From Within",
+    cta: "Learn More",
+  },
+  abTest:
+    "Test Reels vs Carousel this week. Reels predicted higher reach. Carousel predicted higher CTR. Run both with $50/day for 3 days.",
 };
 
 export const GOOGLE_DRAFT = {
-  displayUrl: "youtheory.com/collagen",
+  signalSource: "Google Trends → Search",
+  bucket: "Trend Response",
+  campaignLabel: "Collagen Peptides — Brand + Category",
+  displayUrl: "youtheory.com/collagen-peptides",
+  adStrength: "Excellent",
   headlines: [
     "YouTheory Collagen Peptides",
-    "Collagen for Skin & Joints",
-    "Dissolves in Coffee Instantly",
-    "Clinically Studied Formula",
-    "20% Off Collagen Today",
-    "Premium Collagen Supplement",
-    "No Taste, Real Results",
-    "Collagen Peptides 290g",
-    "Shop YouTheory Collagen",
-    "Beauty Starts From Within",
-    "Joint Support Collagen",
-    "Add to Your Morning Coffee",
-    "Trusted Collagen Brand",
-    "Feel the Difference in 30 Days",
-    "Best-Selling Collagen",
+    "Best Collagen Supplement",
+    "Type 1 2 & 3 Collagen",
+    "Dissolves Instantly",
+    "No Taste No Clumps",
+    "See Results in 30 Days",
+    "Skin Joints Hair Support",
+    "Free Shipping Over $35",
+    "Shop YouTheory Today",
+    "Collagen Coffee Ready",
+    "Unflavored Formula",
+    "Marine + Bovine Blend",
+    "30 Day Supply",
+    "Subscribe and Save 20%",
+    "Clinical Grade Collagen",
   ],
   descriptions: [
-    "Premium collagen peptides that dissolve instantly. Skin, joints & hair support. Shop now.",
-    "Clinically studied formula. No taste in coffee. 20% off your first order today.",
-    "Join 2M+ customers. YouTheory Collagen — the morning ritual that actually works.",
-    "Bovine collagen peptides. Easy to mix. Visible results in as little as 30 days.",
+    "YouTheory Collagen Peptides dissolve in any drink. Type 1, 2 & 3 for full-body support.",
+    "Support skin elasticity, joint comfort and hair with one scoop. Unflavored formula.",
+    "The collagen supplement that works. 5-star reviews. Free shipping on orders over $35.",
+    "Feel the difference in 30 days or your money back. Shop YouTheory Collagen today.",
+  ],
+  display: {
+    shortHeadline: "Feel Better From Within",
+    longHeadline:
+      "YouTheory Collagen — Skin, Joints & Hair Support in One Daily Scoop",
+    description: "Dissolves instantly. Unflavored. Type 1, 2 & 3 Collagen.",
+  },
+  keywords: [
+    { term: "collagen peptides", match: "Exact" as const, volume: "High" as const },
+    { term: "collagen supplement", match: "Phrase" as const, volume: "High" as const },
+    { term: "best collagen powder", match: "Broad" as const, volume: "High" as const },
+    { term: "collagen for skin", match: "Phrase" as const, volume: "Medium" as const },
+    { term: "collagen coffee", match: "Exact" as const, volume: "Medium" as const },
+    { term: "youtheory collagen", match: "Exact" as const, volume: "Medium" as const },
+    { term: "type 1 2 3 collagen", match: "Phrase" as const, volume: "Low" as const },
+    { term: "collagen for joints", match: "Broad" as const, volume: "Medium" as const },
+    { term: "unflavored collagen", match: "Phrase" as const, volume: "Low" as const },
+    { term: "collagen peptides powder", match: "Broad" as const, volume: "High" as const },
   ],
 };
 
 export const AI_PROMPTS_DRAFT = {
-  videoPrompt:
-    "UGC-style vertical video, 9:16, warm morning kitchen lighting. Close-up of hands stirring a scoop of white collagen powder into steaming coffee — powder dissolves instantly with no clumps. Cut to medium shot of woman in her 30s taking first sip, genuine surprised smile. Soft natural window light, shallow depth of field. Product label visible: YouTheory Collagen Peptides. Mood: authentic, cozy, aspirational wellness. Duration 15-20 seconds. No text overlays.",
-  imagePrompt:
-    "Product photography, YouTheory Collagen Peptides tub beside artisan coffee cup on marble countertop, morning golden hour light, steam rising from coffee, one scoop of collagen powder mid-pour creating soft white swirl, minimalist kitchen background, premium wellness aesthetic, shot on 85mm lens, shallow depth of field --ar 4:5 --style raw",
-  sceneDirection:
-    "Open: extreme close-up coffee pour (0-2s). Hook reaction: direct-to-camera POV (2-5s). Demo: scoop + stir dissolve test (5-12s). Payoff: sip + smile + product hero (12-18s). End card: tub + CTA text overlay (18-20s). Camera: handheld micro-movements for UGC feel. Lighting: warm 3200K, soft shadows.",
+  signalSource: "TikTok Trends → AI",
+  bucket: "Trend Response",
+  video: {
+    label: "Veo / Runway / Sora",
+    scenePrompt:
+      "A bright minimal kitchen at golden hour. Woman in early 30s, athletic build, natural makeup, pours one scoop of white powder into morning coffee. Powder dissolves instantly — she watches with satisfied smile. Takes a sip, closes eyes briefly. Cut to: skin glowing in natural light, close up. Warm aspirational tone. No voiceover. Trending audio underneath.",
+    specs: {
+      format: "9:16 vertical",
+      duration: "15-18 seconds",
+      style: "UGC aesthetic, handheld feel",
+      lighting: "Natural, warm, golden hour",
+    },
+    negativePrompts:
+      "No text overlays, no studio lighting, no obvious ad feel, no male talent",
+  },
+  image: {
+    label: "Midjourney / Flux / Firefly",
+    productShot:
+      "YouTheory white collagen powder container, minimalist flat lay, marble surface, morning light from left, small coffee cup beside it, fresh flowers background, editorial lifestyle photography, high-end supplement brand aesthetic, --ar 4:5 --style raw --v 6",
+    lifestyle:
+      "Woman holding collagen supplement container, bright kitchen background, natural light, genuine smile, athletic casual outfit, skin looks hydrated and glowing, authentic UGC style, not stock photo aesthetic, --ar 9:16 --style raw --v 6",
+    hookFrame:
+      "Split screen: left dull tired skin, right glowing hydrated skin, clean minimal design, soft gradient background cream and white, subtle text space at bottom, --ar 9:16",
+  },
+  sceneDirection: {
+    talent: "Woman early 30s, athletic-casual, natural makeup, relatable not model-perfect",
+    setting: "Bright minimal kitchen, morning golden hour, real coffee setup",
+    mood: "Warm, aspirational, authentic UGC — cozy wellness ritual",
+    avoid: "Studio lighting, obvious ad feel, medical claims, competitor mentions",
+  },
   voScript:
-    "What if I told you your morning coffee was missing one thing? YouTheory Collagen peptides dissolve instantly — you won't taste a thing. But your skin, joints, and hair? They'll feel it in thirty days. Link in bio for twenty percent off.",
+    "I've been adding one scoop to my coffee every morning for 30 days. My skin, my joints, my hair — I actually noticed a difference. YouTheory Collagen. Link in bio.",
 };
 
 export const SPARK_AD_DRAFT = {
-  briefTitle: "YouTheory Collagen — #CollagenCoffee Spark Ad Brief",
+  signalSource: "TikTok Trends → Spark",
+  bucket: "Trend Response",
+  brand: "YouTheory",
+  product: "Collagen Peptides 290g",
+  campaign: "#CollagenCoffee Trend Response",
+  budgetGuidance: "$500-2000 per creator",
+  contentDirection:
+    "We're seeing #CollagenCoffee trending organically with 2.4M views. We want authentic creator content showing collagen as part of morning coffee routine. Keep it real — we don't want it to look like an ad.",
   talkingPoints: [
-    "Show your real morning coffee routine — authenticity beats polish",
-    "Demonstrate one scoop dissolving instantly with zero clumps or taste",
-    "Mention visible results timeline: skin, joints, hair in 30 days",
-    "Highlight YouTheory as clinically studied, trusted by 2M+ customers",
-    "Include personal before/after or 'why I switched' story angle",
+    "Dissolves instantly, no taste",
+    "Type 1, 2 & 3 collagen",
+    "Results in 30 days",
+    "One scoop in coffee or any drink",
+    "Skin + joints + hair benefits",
   ],
   dos: [
-    "Film in natural morning light with your actual coffee setup",
-    "Use trending #CollagenCoffee sound or similar coffee-ritual audio",
-    "Show product label clearly for Spark Ad compliance",
+    "Show the actual mixing/dissolving",
+    "Morning routine context",
+    "Genuine reaction/testimonial",
+    "Mention specific benefits noticed",
+    "Use trending audio if possible",
   ],
   donts: [
-    "Don't make unsubstantiated medical claims",
-    "Don't compare directly to competitor products by name",
-    "Don't use copyrighted music outside TikTok library",
+    "No disease or medical claims",
+    "Don't say \"cures\" or \"treats\"",
+    "No before/after medical comparisons",
+    "Don't compare to competitors by name",
+    "No exaggerated results claims",
   ],
-  hashtags: ["#CollagenCoffee", "#MorningRoutine", "#YouTheory", "#CollagenPeptides", "#WellnessTok"],
-  productPoints: [
-    "YouTheory Collagen Peptides — bovine collagen, 6g per serving",
-    "Dissolves in hot or iced coffee, smoothies, or water",
-    "Clinically studied peptides for skin elasticity, joint comfort, hair & nails",
-    "Available at youtheory.com — 20% off first order with code COFFEE20",
+  hashtags: [
+    "#YouTheoryCollagen",
+    "#CollagenCoffee",
+    "#MorningRoutine",
+    "#CollagenPeptides",
+    "#SkinFromWithin",
+    "#WellnessRoutine",
   ],
+  deliverables: [
+    "1 x TikTok video (15-30 sec)",
+    "Optional: 1 x Reels version",
+    "Usage rights: 30 days paid amplification",
+  ],
+  ftcDisclosure: "Must include: #ad or #sponsored or \"paid partnership with YouTheory\"",
 };
 
 export const DRAFT_HISTORY: DraftHistoryRow[] = [
@@ -265,7 +350,7 @@ export const DRAFT_HISTORY: DraftHistoryRow[] = [
     platform: "TikTok",
     bucket: "Seasonal",
     signalSource: "Google Trends",
-    status: "published",
+    status: "rejected",
   },
   {
     id: "10",
@@ -313,4 +398,4 @@ export const DRAFT_STATUS_STYLES: Record<DraftStatus, string> = {
 };
 
 export type HistoryPlatformFilter = "all" | DraftHistoryRow["platform"];
-export type HistoryStatusFilter = "all" | DraftStatus;
+export type HistoryStatusFilter = "all" | "approved" | "pending" | "rejected";
