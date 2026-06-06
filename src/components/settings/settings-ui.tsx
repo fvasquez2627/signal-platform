@@ -209,6 +209,18 @@ export function MonthCheckboxes({
   );
 }
 
+export function AnalyzingSpinner({ label }: { label: string }) {
+  return (
+    <div className="mt-3 flex items-center gap-2 text-sm text-[var(--cyan)]">
+      <span
+        className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[var(--cyan)] border-t-transparent"
+        aria-hidden
+      />
+      <span>{label}</span>
+    </div>
+  );
+}
+
 export function SaveRegenerateButton({
   onClick,
   disabled,

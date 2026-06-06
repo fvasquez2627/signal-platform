@@ -1,39 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/context/app-context";
 import { insertProduct } from "@/lib/data/save-config";
-import type { Client } from "@/types/database";
 import {
   emptyProductDraft,
   ProductWizardStep,
   type ProductDraft,
 } from "@/components/settings/product-wizard-step";
+import { FieldLabel } from "@/components/settings/settings-ui";
 
 type AddProductModalProps = {
-  client: Client;
+  initialClientId?: string;
   onClose: () => void;
   onSaved?: () => void;
 };
 
-export function AddProductModal({ client, onClose, onSaved }: AddProductModalProps) {
-  const { refreshWorkspace, setSelectedProduct } = useApp();
-  const [draft, setDraft] = useState<ProductDraft>(() =>
-    emptyProductDraft(client.brand_url ?? ""),
+export function AddProductModal({
+  initialClientId,
+  onClose,
+  onSaved,
+}: AddProductModalProps) {
+  const { clients, currentClient, refreshWorkspace, setSelectedClient, setSelectedProduct } =
+    useApp();
+
+  const [clientId, setClientId] = useState(
+    () => initialClientId ?? currentClient?.id ?? clients[0]?.id ?? "",
   );
+  const [draft, setDraft] = useState<ProductDraft>(() => emptyProductDraft());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const selectedClient = useMemo(
+    () => clients.find((c) => c.id === clientId) ?? currentClient ?? clients[0] ?? null,
+    [clients, clientId, currentClient],
+  );
+
+  useEffect(() => {
+    if (!selectedClient) return;
+    setDraft(emptyProductDraft(selectedClient.brand_url ?? ""));
+  }, [selectedClient?.id, selectedClient?.brand_url]);
+
   const save = async () => {
-    if (!draft.name.trim()) return;
+    if (!draft.name.trim() || !selectedClient) return;
     setSaving(true);
     setError(null);
     try {
-      const product = await insertProduct(client.id, {
+      const product = await insertProduct(selectedClient.id, {
         ...draft,
-        brand_url: draft.brand_url || client.brand_url || undefined,
+        brand_url: draft.brand_url || selectedClient.brand_url || undefined,
       });
       await refreshWorkspace();
+      setSelectedClient(selectedClient);
       setSelectedProduct(product);
       onSaved?.();
       onClose();
@@ -43,6 +61,10 @@ export function AddProductModal({ client, onClose, onSaved }: AddProductModalPro
       setSaving(false);
     }
   };
+
+  if (!selectedClient) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
@@ -58,14 +80,29 @@ export function AddProductModal({ client, onClose, onSaved }: AddProductModalPro
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <div className="mb-5">
+            <FieldLabel>Add product to:</FieldLabel>
+            <select
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[var(--cyan)]/40"
+            >
+              {clients.map((c) => (
+                <option key={c.id} value={c.id} className="bg-[#0A0D12]">
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <ProductWizardStep
             draft={draft}
             onChange={setDraft}
             brandContext={{
-              name: client.name,
-              category: client.primary_category ?? "General",
+              name: selectedClient.name,
+              category: selectedClient.primary_category ?? "General",
             }}
-            brandUrl={client.brand_url ?? ""}
+            brandUrl={selectedClient.brand_url ?? ""}
           />
           {error && <p className="mt-3 text-sm text-[var(--red)]">{error}</p>}
         </div>

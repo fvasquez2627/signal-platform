@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
+import { jsonError } from "@/lib/ai/json-response";
 
 export async function requireApiUser() {
   const supabase = await createClient();
@@ -8,7 +8,7 @@ export async function requireApiUser() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    return { error: jsonError("Unauthorized", 401) };
   }
 
   return { user };

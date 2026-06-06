@@ -508,7 +508,7 @@ function ProductConfigTab() {
       />
       {showAddProduct && (
         <AddProductModal
-          client={currentClient}
+          initialClientId={currentClient.id}
           onClose={() => setShowAddProduct(false)}
         />
       )}

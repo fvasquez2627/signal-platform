@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { requireApiUser } from "@/lib/ai/auth-api";
 import { callClaudeJson } from "@/lib/ai/claude-server";
+import { jsonError, jsonResponse } from "@/lib/ai/json-response";
 import type { BrandContext } from "@/lib/ai/types";
 
 export async function POST(request: Request) {
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     };
 
     if (!productName?.trim()) {
-      return NextResponse.json({ error: "Product name is required" }, { status: 400 });
+      return jsonError("Product name is required", 400);
     }
 
     const result = await callClaudeJson<{ keywords: string[] }>({
@@ -29,9 +29,9 @@ export async function POST(request: Request) {
       (k) => !existingSet.has(k.toLowerCase()),
     );
 
-    return NextResponse.json({ keywords });
+    return jsonResponse({ keywords });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Keyword suggestion failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return jsonError(message, 500);
   }
 }

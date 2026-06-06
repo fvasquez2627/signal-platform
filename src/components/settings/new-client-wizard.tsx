@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useApp } from "@/context/app-context";
 import { discoverBrand } from "@/lib/ai/discover";
+import { PARTIAL_ANALYSIS_WARNING } from "@/lib/ai/discovery-result";
+import { guessNameFromUrl } from "@/lib/ai/fetch-page-text";
 import type { BrandDiscovery } from "@/lib/ai/types";
 import { normalizePlatforms } from "@/lib/config/constants";
-import { ROUTES } from "@/lib/navigation";
 import {
   insertAllProductsRow,
   insertClientWithAccess,
@@ -15,6 +15,7 @@ import {
 } from "@/lib/data/save-config";
 import { createClient } from "@/lib/supabase/client";
 import {
+  AnalyzingSpinner,
   PlatformCheckboxes,
   TagInput,
   TextArea,
@@ -35,12 +36,12 @@ type BrandDraft = ClientConfigInput & {
   key_brand_claims: string[];
 };
 
-function brandFromDiscovery(data: BrandDiscovery): BrandDraft {
+function brandFromDiscovery(data: BrandDiscovery, url: string): BrandDraft {
   return {
     name: data.name,
     brand_voice: data.brand_voice,
     compliance_notes: data.compliance_notes,
-    brand_url: data.brand_url,
+    brand_url: data.brand_url || url,
     primary_category: data.primary_category,
     target_demographic: data.target_demographic,
     primary_platforms: normalizePlatforms(data.primary_platforms ?? []),
@@ -52,13 +53,12 @@ function brandFromDiscovery(data: BrandDiscovery): BrandDraft {
 }
 
 export function NewClientWizard({ onClose }: NewClientWizardProps) {
-  const router = useRouter();
-  const { runAgents, refreshWorkspace, setSelectedClient, setSelectedProduct } = useApp();
+  const { refreshWorkspace, setSelectedClient, setSelectedProduct } = useApp();
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [brandUrl, setBrandUrl] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
-  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [analyzeWarning, setAnalyzeWarning] = useState<string | null>(null);
   const [brandDiscovered, setBrandDiscovered] = useState(false);
   const [brand, setBrand] = useState<BrandDraft>({
     name: "",
@@ -74,7 +74,6 @@ export function NewClientWizard({ onClose }: NewClientWizardProps) {
     internal_notes: "",
   });
 
-  const [products, setProducts] = useState<ProductDraft[]>([]);
   const [currentProduct, setCurrentProduct] = useState<ProductDraft>(() =>
     emptyProductDraft(),
   );
@@ -82,35 +81,51 @@ export function NewClientWizard({ onClose }: NewClientWizardProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  const canSave = brandDiscovered && brand.name.trim().length > 0;
+
   const analyzeBrand = async () => {
-    if (!brandUrl.trim()) return;
+    const url = brandUrl.trim();
+    if (!url) return;
+
     setAnalyzing(true);
-    setAnalyzeError(null);
+    setAnalyzeWarning(null);
     try {
-      const result = await discoverBrand(brandUrl.trim());
-      setBrand(brandFromDiscovery(result));
+      const result = await discoverBrand(url);
+      setBrand(brandFromDiscovery(result, url));
       setBrandDiscovered(true);
-    } catch (e) {
-      setAnalyzeError(e instanceof Error ? e.message : "Brand analysis failed");
+      if (result.incomplete || result.warning) {
+        setAnalyzeWarning(result.warning ?? PARTIAL_ANALYSIS_WARNING);
+      }
+    } catch {
+      setBrand((prev) => ({
+        ...prev,
+        brand_url: url,
+        name: prev.name || guessNameFromUrl(url),
+      }));
+      setBrandDiscovered(true);
+      setAnalyzeWarning(PARTIAL_ANALYSIS_WARNING);
     } finally {
       setAnalyzing(false);
     }
   };
 
-  const addProductToList = () => {
-    if (!currentProduct.name.trim()) return;
-    setProducts((prev) => [...prev, currentProduct]);
-    setCurrentProduct(emptyProductDraft(brand.brand_url ?? ""));
+  const goToProductStep = () => {
+    setCurrentProduct(emptyProductDraft(brand.brand_url ?? brandUrl));
+    setStep(2);
   };
 
-  const totalKeywords = products.reduce((n, p) => n + (p.keywords?.length ?? 0), 0);
-  const totalCompetitors = new Set(
-    products.flatMap((p) => p.competitors ?? []).concat(brand.competitors ?? []),
-  ).size;
+  const saveClient = async (includeProduct: boolean) => {
+    if (!canSave) return;
 
-  const saveAll = async () => {
     setSaving(true);
     setSaveError(null);
+    setSuccess(null);
+
+    const brandPayload: BrandDraft = {
+      ...brand,
+      brand_url: brand.brand_url?.trim() || brandUrl.trim(),
+    };
+
     try {
       const supabase = createClient();
       const {
@@ -118,28 +133,22 @@ export function NewClientWizard({ onClose }: NewClientWizardProps) {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const client = await insertClientWithAccess(brand, user.id, "admin");
-      const allProductsRow = await insertAllProductsRow(client.id, brand);
+      const client = await insertClientWithAccess(brandPayload, user.id, "admin");
+      const allProductsRow = await insertAllProductsRow(client.id, brandPayload);
 
-      const productList =
-        products.length > 0 ? products : currentProduct.name ? [currentProduct] : [];
-
-      for (const p of productList) {
-        await insertProduct(client.id, {
-          ...p,
-          brand_url: p.brand_url || brand.brand_url,
+      let selectedProduct = allProductsRow;
+      if (includeProduct && currentProduct.name.trim()) {
+        selectedProduct = await insertProduct(client.id, {
+          ...currentProduct,
+          brand_url: currentProduct.brand_url || brandPayload.brand_url,
         });
       }
 
       await refreshWorkspace();
       setSelectedClient(client);
-      setSelectedProduct(allProductsRow);
-      runAgents();
-      setSuccess(`${brand.name} configured. Generating first intelligence brief…`);
-      setTimeout(() => {
-        router.push(ROUTES.dashboard);
-        onClose();
-      }, 1800);
+      setSelectedProduct(selectedProduct);
+      setSuccess(`Client added. Switching to ${client.name}…`);
+      setTimeout(() => onClose(), 2000);
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : "Save failed");
     } finally {
@@ -153,9 +162,9 @@ export function NewClientWizard({ onClose }: NewClientWizardProps) {
         <div className="flex items-center justify-between border-b border-[#1C2530] px-4 py-3">
           <div>
             <p className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
-              Step {step} of 3
+              Step {step} of 2
             </p>
-            <h2 className="font-heading text-lg font-semibold text-white">New Client</h2>
+            <h2 className="font-heading text-lg font-semibold text-white">Add New Client</h2>
           </div>
           <button
             type="button"
@@ -167,12 +176,19 @@ export function NewClientWizard({ onClose }: NewClientWizardProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          {success && (
+            <p className="mb-4 rounded-lg border border-[var(--green)]/30 bg-[var(--green)]/10 px-3 py-2 text-sm text-[var(--green)]">
+              {success}
+            </p>
+          )}
+          {saveError && (
+            <p className="mb-4 text-sm text-[var(--red)]">{saveError}</p>
+          )}
+
           {step === 1 && (
             <div className="space-y-5">
               <div>
-                <h3 className="font-heading text-base font-semibold text-white">
-                  Brand URL Discovery
-                </h3>
+                <h3 className="font-heading text-base font-semibold text-white">Brand URL</h3>
                 <p className="mt-1 text-sm text-white/50">
                   Paste the brand website to auto-fill configuration with AI.
                 </p>
@@ -188,32 +204,46 @@ export function NewClientWizard({ onClose }: NewClientWizardProps) {
                 <button
                   type="button"
                   onClick={() => void analyzeBrand()}
-                  disabled={analyzing || !brandUrl.trim()}
+                  disabled={analyzing}
                   className="mt-3 rounded-lg bg-[var(--cyan)] px-4 py-2 text-sm font-semibold text-[var(--bg)] hover:opacity-90 disabled:opacity-50"
                 >
-                  {analyzing ? "Analyzing brand…" : "Analyze Brand"}
+                  Analyze Brand
                 </button>
-                {analyzeError && (
-                  <p className="mt-2 text-sm text-[var(--red)]">{analyzeError}</p>
+                {analyzing && <AnalyzingSpinner label="Analyzing brand URL..." />}
+                {analyzeWarning && (
+                  <p className="mt-2 text-sm text-amber-300/90">{analyzeWarning}</p>
                 )}
               </div>
 
               {brandDiscovered && (
                 <>
-                  <p className="rounded-lg border border-[var(--cyan)]/25 bg-[var(--cyan)]/5 px-3 py-2 text-sm text-[var(--cyan)]">
-                    AI found the following — review and edit anything before saving
-                  </p>
+                  {!analyzeWarning && (
+                    <p className="rounded-lg border border-[var(--cyan)]/25 bg-[var(--cyan)]/5 px-3 py-2 text-sm text-[var(--cyan)]">
+                      AI found the following — review and edit anything before saving
+                    </p>
+                  )}
                   <div className="space-y-4">
                     <TextInput
                       label="Brand Name"
                       value={brand.name}
                       onChange={(v) => setBrand({ ...brand, name: v })}
                     />
+                    <TextInput
+                      label="Brand URL"
+                      value={brand.brand_url ?? ""}
+                      onChange={(v) => setBrand({ ...brand, brand_url: v })}
+                      placeholder="https://www.youtheory.com"
+                    />
                     <TextArea
                       label="Brand Voice"
                       value={brand.brand_voice}
                       onChange={(v) => setBrand({ ...brand, brand_voice: v })}
                       rows={4}
+                    />
+                    <TextInput
+                      label="Primary Category"
+                      value={brand.primary_category ?? ""}
+                      onChange={(v) => setBrand({ ...brand, primary_category: v })}
                     />
                     <TextArea
                       label="Compliance Notes"
@@ -222,9 +252,9 @@ export function NewClientWizard({ onClose }: NewClientWizardProps) {
                       rows={3}
                     />
                     <TextInput
-                      label="Primary Category"
-                      value={brand.primary_category ?? ""}
-                      onChange={(v) => setBrand({ ...brand, primary_category: v })}
+                      label="Target Demographic"
+                      value={brand.target_demographic ?? ""}
+                      onChange={(v) => setBrand({ ...brand, target_demographic: v })}
                     />
                     <TagInput
                       label="Certifications"
@@ -238,15 +268,10 @@ export function NewClientWizard({ onClose }: NewClientWizardProps) {
                       onChange={(v) => setBrand({ ...brand, key_brand_claims: v })}
                     />
                     <TagInput
-                      label="Competitors"
+                      label="Brand-Level Competitors"
                       values={brand.competitors ?? []}
                       onChange={(v) => setBrand({ ...brand, competitors: v })}
                       placeholder="Add competitor"
-                    />
-                    <TextInput
-                      label="Target Demographic"
-                      value={brand.target_demographic ?? ""}
-                      onChange={(v) => setBrand({ ...brand, target_demographic: v })}
                     />
                     <PlatformCheckboxes
                       label="Active Platforms"
@@ -254,10 +279,10 @@ export function NewClientWizard({ onClose }: NewClientWizardProps) {
                       onChange={(v) => setBrand({ ...brand, primary_platforms: v })}
                     />
                     <TextArea
-                      label="Notes (internal only)"
+                      label="Internal Notes"
                       value={brand.internal_notes ?? ""}
                       onChange={(v) => setBrand({ ...brand, internal_notes: v })}
-                      rows={2}
+                      rows={3}
                     />
                   </div>
                 </>
@@ -266,110 +291,72 @@ export function NewClientWizard({ onClose }: NewClientWizardProps) {
           )}
 
           {step === 2 && (
-            <div className="space-y-6">
-              <ProductWizardStep
-                draft={currentProduct}
-                onChange={setCurrentProduct}
-                brandContext={{
-                  name: brand.name,
-                  category: brand.primary_category ?? "General",
-                }}
-                brandUrl={brand.brand_url ?? brandUrl}
-                title="Add your first product"
-                subtitle="Now let's add your first product — paste a product page URL."
-              />
-
-              {products.length > 0 && (
-                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-                  <p className="font-mono-label text-[10px] uppercase text-white/40">
-                    Products queued ({products.length})
-                  </p>
-                  <ul className="mt-2 space-y-1">
-                    {products.map((p, i) => (
-                      <li key={`${p.name}-${i}`} className="text-sm text-white/70">
-                        {p.name}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={addProductToList}
-                  disabled={!currentProduct.name.trim()}
-                  className="rounded-lg border border-[var(--cyan)]/40 px-4 py-2 text-sm text-[var(--cyan)] hover:bg-[var(--cyan)]/10 disabled:opacity-40"
-                >
-                  Add Another Product
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-4">
-              <h3 className="font-heading text-base font-semibold text-white">
-                Confirm & Save
-              </h3>
-              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-sm text-white/70">
-                <p>
-                  <span className="text-white/40">Client:</span> {brand.name}
-                </p>
-                <p className="mt-2">
-                  <span className="text-white/40">Products:</span>{" "}
-                  {products.length > 0
-                    ? products.map((p) => p.name).join(", ")
-                    : currentProduct.name || "None yet"}
-                </p>
-                <p className="mt-2">
-                  <span className="text-white/40">Competitors tracked:</span> {totalCompetitors}
-                </p>
-                <p className="mt-2">
-                  <span className="text-white/40">Keywords monitored:</span> {totalKeywords}
-                </p>
-              </div>
-              {success && (
-                <p className="text-sm text-[var(--green)]">{success}</p>
-              )}
-              {saveError && <p className="text-sm text-[var(--red)]">{saveError}</p>}
-            </div>
+            <ProductWizardStep
+              draft={currentProduct}
+              onChange={setCurrentProduct}
+              brandContext={{
+                name: brand.name,
+                category: brand.primary_category ?? "General",
+              }}
+              brandUrl={brand.brand_url ?? brandUrl}
+              title="Add first product (optional)"
+              subtitle="Paste a product page URL to analyze with AI, or skip and add products later."
+            />
           )}
         </div>
 
-        <div className="flex justify-between gap-2 border-t border-[#1C2530] px-4 py-3">
-          <button
-            type="button"
-            onClick={() => setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s))}
-            disabled={step === 1}
-            className="rounded-lg border border-white/15 px-4 py-2 text-sm text-white/60 hover:bg-white/5 disabled:opacity-30"
-          >
-            Back
-          </button>
-          {step < 3 ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (step === 1 && !brandDiscovered) return;
-                if (step === 2 && products.length === 0 && currentProduct.name) {
-                  addProductToList();
-                }
-                setStep((s) => (s < 3 ? ((s + 1) as 1 | 2 | 3) : s));
-              }}
-              disabled={step === 1 && !brandDiscovered}
-              className="rounded-lg bg-[var(--cyan)] px-4 py-2 text-sm font-semibold text-[var(--bg)] hover:opacity-90 disabled:opacity-40"
-            >
-              Continue
-            </button>
+        <div className="flex flex-wrap justify-between gap-2 border-t border-[#1C2530] px-4 py-3">
+          {step === 1 ? (
+            <>
+              <div />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void saveClient(false)}
+                  disabled={saving || !canSave}
+                  className="rounded-lg border border-white/15 px-4 py-2 text-sm text-white/70 hover:bg-white/5 disabled:opacity-40"
+                >
+                  {saving ? "Saving…" : "Save Client Only"}
+                </button>
+                <button
+                  type="button"
+                  onClick={goToProductStep}
+                  disabled={!canSave}
+                  className="rounded-lg bg-[var(--cyan)] px-4 py-2 text-sm font-semibold text-[var(--bg)] hover:opacity-90 disabled:opacity-40"
+                >
+                  Next: Add First Product
+                </button>
+              </div>
+            </>
           ) : (
-            <button
-              type="button"
-              onClick={() => void saveAll()}
-              disabled={saving}
-              className="rounded-lg bg-gradient-to-r from-[var(--cyan)] to-[var(--green)] px-4 py-2 text-sm font-semibold text-[var(--bg)] hover:opacity-90 disabled:opacity-50"
-            >
-              {saving ? "Saving…" : "Save & Generate First Brief"}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                disabled={saving}
+                className="rounded-lg border border-white/15 px-4 py-2 text-sm text-white/60 hover:bg-white/5 disabled:opacity-30"
+              >
+                Back
+              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void saveClient(false)}
+                  disabled={saving}
+                  className="rounded-lg border border-white/15 px-4 py-2 text-sm text-white/70 hover:bg-white/5 disabled:opacity-40"
+                >
+                  {saving ? "Saving…" : "Skip for now"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void saveClient(true)}
+                  disabled={saving || !currentProduct.name.trim()}
+                  className="rounded-lg bg-gradient-to-r from-[var(--cyan)] to-[var(--green)] px-4 py-2 text-sm font-semibold text-[var(--bg)] hover:opacity-90 disabled:opacity-50"
+                >
+                  {saving ? "Saving…" : "Save Client & Product"}
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>

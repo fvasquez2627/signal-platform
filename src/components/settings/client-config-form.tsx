@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useApp } from "@/context/app-context";
 import { discoverBrand } from "@/lib/ai/discover";
+import { PARTIAL_ANALYSIS_WARNING } from "@/lib/ai/discovery-result";
 import type { BrandDiscovery } from "@/lib/ai/types";
 import { normalizePlatforms } from "@/lib/config/constants";
 import { updateClientConfig } from "@/lib/data/save-config";
 import type { Client } from "@/types/database";
 import {
+  AnalyzingSpinner,
   PlatformCheckboxes,
   ProgressOverlay,
   SaveRegenerateButton,
@@ -28,7 +30,7 @@ export function ClientConfigForm({ client }: { client: Client }) {
   const [primaryCategory, setPrimaryCategory] = useState(client.primary_category ?? "");
   const [certifications, setCertifications] = useState(client.certifications ?? []);
   const [keyClaims, setKeyClaims] = useState(client.key_brand_claims ?? []);
-  const [competitors, setCompetitors] = useState(client.competitors ?? []);
+  const [competitors, setCompetitors] = useState(client.suggested_competitors ?? []);
   const [demographic, setDemographic] = useState(client.target_demographic ?? "");
   const [platforms, setPlatforms] = useState(client.primary_platforms ?? []);
   const [internalNotes, setInternalNotes] = useState(client.internal_notes ?? "");
@@ -56,12 +58,20 @@ export function ClientConfigForm({ client }: { client: Client }) {
   const reanalyze = async () => {
     if (!brandUrl.trim()) return;
     setAnalyzing(true);
+    setToast(null);
     try {
       const result = await discoverBrand(brandUrl.trim());
       applyDiscovery(result);
-      setToast("Brand re-analyzed — review updated fields before saving.");
+      if (result.incomplete || result.warning) {
+        setToastVariant("info");
+        setToast(result.warning ?? PARTIAL_ANALYSIS_WARNING);
+      } else {
+        setToastVariant("success");
+        setToast("Brand re-analyzed — review updated fields before saving.");
+      }
     } catch {
-      setToast("Re-analysis failed. Check URL and API key.");
+      setToastVariant("info");
+      setToast(PARTIAL_ANALYSIS_WARNING);
     } finally {
       setAnalyzing(false);
     }
@@ -117,9 +127,10 @@ export function ClientConfigForm({ client }: { client: Client }) {
             disabled={analyzing || !brandUrl.trim()}
             className="shrink-0 rounded-lg border border-[var(--cyan)]/40 px-4 py-2 text-sm text-[var(--cyan)] hover:bg-[var(--cyan)]/10 disabled:opacity-40"
           >
-            {analyzing ? "Analyzing…" : "Re-analyze from URL"}
+            Re-analyze from URL
           </button>
         </div>
+        {analyzing && <AnalyzingSpinner label="Analyzing brand URL..." />}
       </div>
 
       <TextInput label="Brand Name" value={name} onChange={setName} />

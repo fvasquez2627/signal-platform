@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useApp } from "@/context/app-context";
 import { discoverCompetitors, discoverProduct, suggestKeywords } from "@/lib/ai/discover";
+import { PARTIAL_ANALYSIS_WARNING } from "@/lib/ai/discovery-result";
 import {
   applyAcceptedDiff,
   buildProductConfigDiff,
@@ -14,6 +15,7 @@ import type { Client, Product } from "@/types/database";
 import { ConfigDiffPanel } from "@/components/settings/config-diff-panel";
 import { productFromDiscovery, type ProductDraft } from "@/components/settings/product-wizard-step";
 import {
+  AnalyzingSpinner,
   MonthCheckboxes,
   PlatformCheckboxes,
   ProgressOverlay,
@@ -93,8 +95,13 @@ export function ProductConfigForm({
   const reanalyze = async () => {
     if (!draft.product_url?.trim()) return;
     setAnalyzing(true);
+    setToast(null);
     try {
-      const result = await discoverProduct(draft.product_url.trim(), brandContext);
+      const result = await discoverProduct(
+        draft.product_url.trim(),
+        brandContext,
+        draft.brand_url ?? "",
+      );
       const discovered = productFromDiscovery(result, draft.brand_url ?? "");
       const built = buildProductConfigDiff(
         {
@@ -115,11 +122,19 @@ export function ProductConfigForm({
       const newCompetitors = built.items.filter(
         (i) => i.field === "Competitors" && i.action === "add",
       ).length;
-      if (newCompetitors > 0) {
+      if (result.incomplete || result.warning) {
+        setToastVariant("info");
+        setToast(result.warning ?? PARTIAL_ANALYSIS_WARNING);
+      } else if (newCompetitors > 0) {
+        setToastVariant("success");
         setToast(`Claude found ${newCompetitors} new competitors`);
+      } else {
+        setToastVariant("success");
+        setToast("Product re-analyzed — review changes before saving.");
       }
     } catch {
-      setToast("Re-analysis failed.");
+      setToastVariant("info");
+      setToast(PARTIAL_ANALYSIS_WARNING);
     } finally {
       setAnalyzing(false);
     }
@@ -293,8 +308,9 @@ export function ProductConfigForm({
           disabled={analyzing}
           className="mt-2 rounded-lg border border-[var(--cyan)]/40 px-4 py-2 text-sm text-[var(--cyan)] hover:bg-[var(--cyan)]/10 disabled:opacity-40"
         >
-          {analyzing ? "Analyzing…" : "Re-analyze from URL"}
+          Re-analyze from URL
         </button>
+        {analyzing && <AnalyzingSpinner label="Analyzing product URL..." />}
       </div>
 
       {diff && (

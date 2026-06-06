@@ -27,7 +27,7 @@ export interface Client {
   primary_platforms?: string[] | null;
   certifications?: string[] | null;
   key_brand_claims?: string[] | null;
-  competitors?: string[] | null;
+  suggested_competitors?: string[] | null;
   internal_notes?: string | null;
   created_at?: string;
 }

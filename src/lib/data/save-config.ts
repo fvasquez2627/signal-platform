@@ -90,10 +90,10 @@ export async function insertClientWithAccess(
       primary_platforms: platformsToStorage(normalizePlatforms(input.primary_platforms ?? [])),
       certifications: input.certifications ?? [],
       key_brand_claims: input.key_brand_claims ?? [],
-      competitors: input.competitors ?? [],
+      suggested_competitors: input.competitors ?? [],
       internal_notes: input.internal_notes ?? null,
     } as never)
-    .select("id, name, brand_voice, compliance_notes, brand_url, primary_category, target_demographic, primary_platforms, certifications, key_brand_claims, competitors, internal_notes")
+    .select("id, name, brand_voice, compliance_notes, brand_url, primary_category, target_demographic, primary_platforms, certifications, key_brand_claims, suggested_competitors, internal_notes")
     .single();
 
   if (error || !data) throw new Error(error?.message ?? "Failed to create client");
@@ -164,7 +164,7 @@ export async function updateClientConfig(
     primary_platforms: platformsToStorage(normalizePlatforms(input.primary_platforms ?? [])),
     certifications: input.certifications ?? [],
     key_brand_claims: input.key_brand_claims ?? [],
-    competitors: input.competitors ?? [],
+    suggested_competitors: input.competitors ?? [],
     internal_notes: input.internal_notes ?? null,
   };
 

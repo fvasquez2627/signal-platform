@@ -1,55 +1,105 @@
-import { NextResponse } from "next/server";
 import { requireApiUser } from "@/lib/ai/auth-api";
-import { callClaudeJson } from "@/lib/ai/claude-server";
+import { callClaudeWebResearch } from "@/lib/ai/claude-server";
+import {
+  isBrandDiscoveryIncomplete,
+  partialBrandDiscovery,
+  withDiscoveryMeta,
+} from "@/lib/ai/discovery-result";
+import { jsonError, jsonResponse } from "@/lib/ai/json-response";
 import type { BrandDiscovery } from "@/lib/ai/types";
 
-const BRAND_SYSTEM = `You are a brand intelligence analyst.
-Analyze this brand website and return a JSON object with:
+export const runtime = "nodejs";
+
+function buildBrandResearchPrompt(url: string): string {
+  return `Research this brand website URL and return a complete JSON analysis:
+URL: ${url}
+
+Use web search to find information about this brand including:
+- Brand name and positioning
+- Brand voice and tone
+- Health/legal compliance notes or disclaimers
+- Primary product category
+- Target demographic
+- Social platforms where they are active
+- Direct brand competitors in their category
+- Certifications (NSF, GMP, organic, etc.)
+- Key brand value propositions and claims
+
+Return ONLY this JSON structure, no other text:
 {
-  name: string (brand name),
-  brand_voice: string (tone and style description),
-  compliance_notes: string (any health/legal disclaimers you detect on the site),
-  primary_category: string (supplement type, e.g. 'Health Supplements'),
-  target_demographic: string,
-  primary_platforms: string[] (which platforms they appear active on based on site),
-  suggested_competitors: string[] (5-8 direct brand competitors in their category),
-  certifications: string[] (any certifications mentioned: NSF, GMP, etc),
-  key_brand_claims: string[] (main value props),
-  brand_url: string (the URL provided)
+  "name": "",
+  "brand_voice": "",
+  "compliance_notes": "",
+  "primary_category": "",
+  "target_demographic": "",
+  "primary_platforms": [],
+  "suggested_competitors": [],
+  "certifications": [],
+  "key_brand_claims": [],
+  "brand_url": "${url}"
+}`;
 }
-Return ONLY valid JSON, no other text.`;
 
 export async function POST(request: Request) {
-  const auth = await requireApiUser();
-  if ("error" in auth && auth.error) return auth.error;
+  console.log("[discover/brand] route hit");
 
   try {
-    const { url } = (await request.json()) as { url?: string };
-    if (!url?.trim()) {
-      return NextResponse.json({ error: "URL is required" }, { status: 400 });
+    const auth = await requireApiUser();
+    if ("error" in auth && auth.error) return auth.error;
+
+    let body: { url?: string };
+    try {
+      body = (await request.json()) as { url?: string };
+    } catch {
+      return jsonError("Invalid JSON body", 400);
     }
 
-    const brandUrl = url.trim();
+    if (!body.url?.trim()) {
+      return jsonError("URL is required", 400);
+    }
 
-    const result = await callClaudeJson<BrandDiscovery>({
-      system: BRAND_SYSTEM,
-      user: `Analyze this brand website URL: ${brandUrl}`,
-      url: brandUrl,
-    });
+    const brandUrl = body.url.trim();
+    const fallback = partialBrandDiscovery(brandUrl, "");
 
-    return NextResponse.json({
-      ...result,
-      brand_url: result.brand_url || brandUrl,
-      suggested_competitors: result.suggested_competitors ?? [],
-      certifications: result.certifications ?? [],
-      key_brand_claims: result.key_brand_claims ?? [],
-      primary_platforms: result.primary_platforms ?? [],
-    });
+    try {
+      const result = await callClaudeWebResearch<BrandDiscovery>(
+        buildBrandResearchPrompt(brandUrl),
+      );
+
+      const merged = {
+        ...fallback,
+        ...result,
+        brand_url: result.brand_url || brandUrl,
+        suggested_competitors: result.suggested_competitors ?? [],
+        certifications: result.certifications ?? [],
+        key_brand_claims: result.key_brand_claims ?? [],
+        primary_platforms: result.primary_platforms ?? [],
+      };
+
+      return jsonResponse(
+        withDiscoveryMeta(merged, isBrandDiscoveryIncomplete(merged)),
+      );
+    } catch (claudeError) {
+      const message =
+        claudeError instanceof Error ? claudeError.message : "Brand discovery failed";
+
+      return jsonResponse(
+        withDiscoveryMeta(
+          {
+            ...fallback,
+            brand_url: brandUrl,
+            suggested_competitors: [],
+            certifications: [],
+            key_brand_claims: [],
+            primary_platforms: [],
+            error: message,
+          },
+          true,
+        ),
+      );
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Brand discovery failed";
-    return NextResponse.json(
-      { error: message, partial: { brand_url: "" } },
-      { status: 500 },
-    );
+    return jsonError(message, 500);
   }
 }

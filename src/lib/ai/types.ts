@@ -38,3 +38,9 @@ export type DiscoverError = {
   error: string;
   partial?: Partial<BrandDiscovery | ProductDiscovery>;
 };
+
+export type DiscoveryResponse<T> = T & {
+  incomplete?: boolean;
+  warning?: string;
+  error?: string;
+};

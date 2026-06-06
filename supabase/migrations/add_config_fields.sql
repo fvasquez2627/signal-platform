@@ -7,7 +7,7 @@ ADD COLUMN IF NOT EXISTS target_demographic text,
 ADD COLUMN IF NOT EXISTS primary_platforms jsonb DEFAULT '[]',
 ADD COLUMN IF NOT EXISTS certifications jsonb DEFAULT '[]',
 ADD COLUMN IF NOT EXISTS key_brand_claims jsonb DEFAULT '[]',
-ADD COLUMN IF NOT EXISTS competitors text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS suggested_competitors text[] DEFAULT '{}',
 ADD COLUMN IF NOT EXISTS internal_notes text;
 
 ALTER TABLE public.products

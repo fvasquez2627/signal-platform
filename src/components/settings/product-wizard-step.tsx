@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { discoverProduct } from "@/lib/ai/discover";
-import type { BrandContext, ProductDiscovery } from "@/lib/ai/types";
+import { PARTIAL_ANALYSIS_WARNING } from "@/lib/ai/discovery-result";
+import { guessNameFromUrl } from "@/lib/ai/fetch-page-text";
+import type { BrandContext, DiscoveryResponse, ProductDiscovery } from "@/lib/ai/types";
 import { normalizePlatforms } from "@/lib/config/constants";
 import type { ProductConfigInput } from "@/lib/data/save-config";
 import {
+  AnalyzingSpinner,
   MonthCheckboxes,
   PlatformCheckboxes,
   TagInput,
@@ -89,22 +91,78 @@ export function ProductWizardStep({
 }: ProductWizardStepProps) {
   const [productUrl, setProductUrl] = useState(draft.product_url ?? "");
   const [analyzing, setAnalyzing] = useState(false);
-  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [analyzeWarning, setAnalyzeWarning] = useState<string | null>(null);
   const [discovered, setDiscovered] = useState(false);
 
   const patch = (partial: Partial<ProductDraft>) => onChange({ ...draft, ...partial });
 
+  const showFormWithPartial = (url: string) => {
+    onChange({
+      ...draft,
+      product_url: url,
+      brand_url: draft.brand_url || brandUrl,
+      name: draft.name || guessNameFromUrl(url),
+    });
+    setDiscovered(true);
+    setAnalyzeWarning(PARTIAL_ANALYSIS_WARNING);
+  };
+
   const analyze = async () => {
-    if (!productUrl.trim()) return;
+    const url = productUrl.trim();
+    console.log("Analyze clicked", url);
+
+    if (!url) {
+      console.warn("Analyze aborted: product URL is empty");
+      return;
+    }
+
     setAnalyzing(true);
-    setAnalyzeError(null);
+    setAnalyzeWarning(null);
+
     try {
-      const result = await discoverProduct(productUrl.trim(), brandContext);
-      const next = productFromDiscovery(result, brandUrl);
+      console.log("Calling API...", { url, brandContext, brandUrl });
+
+      const response = await fetch("/api/discover/product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, brandContext, brandUrl }),
+      });
+
+      console.log("API response status:", response.status);
+
+      const raw = await response.text();
+      let result: DiscoveryResponse<ProductDiscovery>;
+      try {
+        result = JSON.parse(raw) as DiscoveryResponse<ProductDiscovery>;
+      } catch {
+        const preview = raw.trim().slice(0, 80);
+        throw new Error(
+          preview.startsWith("<!DOCTYPE") || preview.startsWith("<html")
+            ? `Server returned HTML (${response.status})`
+            : `Invalid JSON response (${response.status})`,
+        );
+      }
+
+      if (!response.ok && !result.incomplete) {
+        throw new Error(result.error ?? `Request failed (${response.status})`);
+      }
+
+      console.log("API result:", result);
+
+      const next = {
+        ...draft,
+        ...productFromDiscovery(result, brandUrl),
+        product_url: url,
+      };
       onChange(next);
       setDiscovered(true);
-    } catch (e) {
-      setAnalyzeError(e instanceof Error ? e.message : "Analysis failed");
+
+      if (result.incomplete || result.warning) {
+        setAnalyzeWarning(result.warning ?? PARTIAL_ANALYSIS_WARNING);
+      }
+    } catch (error) {
+      console.error("Analyze Product failed:", error);
+      showFormWithPartial(url);
     } finally {
       setAnalyzing(false);
     }
@@ -126,18 +184,22 @@ export function ProductWizardStep({
         />
         <button
           type="button"
-          onClick={() => void analyze()}
-          disabled={analyzing || !productUrl.trim()}
+          onClick={() => {
+            console.log("Analyze button onClick fired");
+            void analyze();
+          }}
+          disabled={analyzing}
           className="mt-3 rounded-lg bg-[var(--cyan)] px-4 py-2 text-sm font-semibold text-[var(--bg)] hover:opacity-90 disabled:opacity-50"
         >
-          {analyzing ? "Analyzing product…" : "Analyze Product"}
+          Analyze Product
         </button>
-        {analyzeError && (
-          <p className="mt-2 text-sm text-[var(--red)]">{analyzeError}</p>
+        {analyzing && <AnalyzingSpinner label="Analyzing product URL..." />}
+        {analyzeWarning && (
+          <p className="mt-2 text-sm text-amber-300/90">{analyzeWarning}</p>
         )}
       </div>
 
-      {discovered && (
+      {discovered && !analyzeWarning && (
         <p className="rounded-lg border border-[var(--cyan)]/25 bg-[var(--cyan)]/5 px-3 py-2 text-sm text-[var(--cyan)]">
           AI found the following — review and edit anything before saving
         </p>
