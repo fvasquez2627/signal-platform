@@ -5,6 +5,7 @@ export type SignalChannel = "search" | "social" | "retail" | "pr";
 export type SignalSource =
   | "TikTok Trends"
   | "Meta Ad Library"
+  | "Competitive Intel"
   | "Google Trends"
   | "Amazon Reviews"
   | "Reddit"
@@ -12,6 +13,17 @@ export type SignalSource =
   | "Google News"
   | "Instagram Signals"
   | "People Also Ask";
+
+export type CreativeIntelligence = {
+  hookType: string;
+  format: string;
+  length: string;
+  reach: string;
+  daysRunning: number;
+  extractedHook: string;
+  hasCounterDraft: boolean;
+  counterDraftHook?: string;
+};
 
 export type DetailFilter =
   | "all"
@@ -36,6 +48,7 @@ export type FeedSignal = {
   tags: string[];
   score: number;
   priority: "high" | "medium" | "low";
+  creativeIntel?: CreativeIntelligence;
 };
 
 export const LAST_UPDATED = "Today, 2:14 PM";
@@ -83,6 +96,7 @@ export const TYPE_TAG: Record<SignalType, { label: string; className: string }> 
 export const SOURCE_BADGE: Record<SignalSource, string> = {
   "TikTok Trends": "bg-[var(--cyan)]/15 text-[var(--cyan)]",
   "Meta Ad Library": "bg-[var(--purple)]/15 text-[var(--purple)]",
+  "Competitive Intel": "bg-[#FF8C42]/15 text-[#FF8C42]",
   "Google Trends": "bg-[var(--yellow)]/15 text-[var(--yellow)]",
   "Amazon Reviews": "bg-[var(--green)]/10 text-[var(--green)]",
   Reddit: "bg-[#FF8C42]/15 text-[#FF8C42]",
@@ -111,12 +125,24 @@ export const FEED_SIGNALS: FeedSignal[] = [
     source: "Meta Ad Library",
     channels: ["social"],
     timestamp: "8m ago",
-    title: "RivalCo scaled UGC ad spend 3.2× in 72 hours",
+    title: "Vital Proteins scaled UGC ad spend 3.2× in 72 hours",
     summary: "47 new active creatives detected; hook patterns mirror your top-performing TikTok format.",
-    body: "Meta Ad Library shows RivalCo launched 47 new video creatives across US/CA in the last 72 hours. Primary hooks use problem-agitate-solution structure with creator-style UGC. Estimated weekly spend up 220% vs prior period. Three ads reuse your branded hashtag phrasing.",
+    body: "Meta Ad Library shows Vital Proteins launched 47 new video creatives across US/CA in the last 72 hours. Primary hooks use problem-agitate-solution structure with creator-style UGC. Estimated weekly spend up 220% vs prior period. Three ads reuse your branded hashtag phrasing.",
     tags: ["competitor", "paid-social", "ugc", "high-priority"],
     score: 94,
     priority: "high",
+    creativeIntel: {
+      hookType: "Problem Hook",
+      format: "UGC Format",
+      length: "19 sec",
+      reach: "47K",
+      daysRunning: 73,
+      extractedHook:
+        "I tried collagen for 60 days and here's what happened to my morning routine...",
+      hasCounterDraft: true,
+      counterDraftHook:
+        "POV: you found out your morning coffee was missing one ingredient this whole time 👀",
+    },
   },
   {
     id: "sig-02",
@@ -150,12 +176,23 @@ export const FEED_SIGNALS: FeedSignal[] = [
     source: "TikTok Trends",
     channels: ["social"],
     timestamp: "1h ago",
-    title: "Hashtag #MorningRitualStack velocity +280% WoW",
-    summary: "12 top creators in category using demo + testimonial hybrid format.",
-    body: "TikTok Trends reports #MorningRitualStack entering top 50 wellness hashtags. Sound “Soft Start 02” paired in 34% of top-performing posts. Median view-to-save ratio 2.1× category average. Agent matched 3 draft templates to dominant edit pacing (hook <2s, product at 4s).",
+    title: "Hashtag #CollagenCoffee velocity +340% WoW",
+    summary: "2.4M views — no major brand has claimed the trend yet.",
+    body: "TikTok Trends reports #CollagenCoffee entering top 50 wellness hashtags with 2.4M views in 48hrs. Coffee-ritual demo format dominates top posts. Peak predicted in 72 hours. Agent matched 3 draft templates to dominant edit pacing (hook <2s, product at 4s).",
     tags: ["tiktok", "hashtag", "trend", "content"],
     score: 88,
     priority: "high",
+    creativeIntel: {
+      hookType: "Trend/Sound Hook",
+      format: "UGC Demo",
+      length: "18 sec",
+      reach: "89K",
+      daysRunning: 12,
+      extractedHook: "Watch what happens when I add collagen to my morning coffee...",
+      hasCounterDraft: true,
+      counterDraftHook:
+        "POV: you found out your morning coffee was missing one ingredient this whole time 👀",
+    },
   },
   {
     id: "sig-05",
@@ -195,6 +232,15 @@ export const FEED_SIGNALS: FeedSignal[] = [
     tags: ["meta", "cpm", "paid", "benchmark"],
     score: 83,
     priority: "medium",
+    creativeIntel: {
+      hookType: "Product Demo",
+      format: "Static/Carousel",
+      length: "N/A",
+      reach: "22K",
+      daysRunning: 45,
+      extractedHook: "The collagen supplement everyone's switching to this year...",
+      hasCounterDraft: false,
+    },
   },
   {
     id: "sig-08",
@@ -260,6 +306,15 @@ export const FEED_SIGNALS: FeedSignal[] = [
     tags: ["tiktok", "sound", "creative-fatigue"],
     score: 79,
     priority: "medium",
+    creativeIntel: {
+      hookType: "Trend/Sound Hook",
+      format: "UGC Format",
+      length: "15 sec",
+      reach: "62K",
+      daysRunning: 28,
+      extractedHook: "This sound + my morning routine = chef's kiss...",
+      hasCounterDraft: false,
+    },
   },
   {
     id: "sig-13",
@@ -327,6 +382,16 @@ export function topSourcesByCount(signals: FeedSignal[] = FEED_SIGNALS, limit = 
 
 export function signalAction(type: SignalType): "Generate Brief" | "Add to Content Queue" {
   return type === "opportunity" ? "Add to Content Queue" : "Generate Brief";
+}
+
+const CREATIVE_INTEL_SOURCES: SignalSource[] = [
+  "Competitive Intel",
+  "Meta Ad Library",
+  "TikTok Trends",
+];
+
+export function hasCreativeIntel(signal: FeedSignal): boolean {
+  return CREATIVE_INTEL_SOURCES.includes(signal.source) && signal.creativeIntel != null;
 }
 
 export function matchesFilter(signal: FeedSignal, filter: DetailFilter): boolean {

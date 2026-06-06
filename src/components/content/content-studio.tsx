@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useApp } from "@/context/app-context";
 import { AiPromptsDraftTab } from "@/components/content/ai-prompts-draft-tab";
 import {
@@ -17,6 +18,7 @@ import {
   BUCKET_STATUS_STYLES,
   CONTENT_BUCKETS,
   DRAFT_HISTORY,
+  DRAFT_INSPIRATION,
   DRAFT_STATUS_STYLES,
   GENERATION_STATS,
   PLATFORM_TABS,
@@ -132,17 +134,22 @@ function BucketCard({
   bucket,
   onToggle,
   onNotesChange,
+  highlighted = false,
 }: {
   bucket: ContentBucket;
   onToggle: (id: string, enabled: boolean) => void;
   onNotesChange: (id: string, notes: string) => void;
+  highlighted?: boolean;
 }) {
   return (
     <div
+      id={`bucket-${bucket.id}`}
       className={`rounded-lg border px-4 py-3 transition-colors ${
-        bucket.enabled
-          ? "border-[var(--cyan)]/25 bg-[var(--cyan)]/5"
-          : "border-white/10 bg-white/[0.02]"
+        highlighted
+          ? "border-[var(--cyan)] ring-2 ring-[var(--cyan)]/30 bg-[var(--cyan)]/10"
+          : bucket.enabled
+            ? "border-[var(--cyan)]/25 bg-[var(--cyan)]/5"
+            : "border-white/10 bg-white/[0.02]"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -162,6 +169,28 @@ function BucketCard({
           <p className="mt-1 font-mono-label text-xs text-white/45">
             {bucket.piecesSuggested} piece{bucket.piecesSuggested !== 1 ? "s" : ""} suggested
           </p>
+          {bucket.competitiveContext && (
+            <div className="mt-2 space-y-0.5 rounded-md border border-white/10 bg-white/[0.02] px-2.5 py-2 text-xs text-white/55">
+              <p>
+                <span className="font-mono-label text-[9px] uppercase text-white/35">
+                  Based on:{" "}
+                </span>
+                {bucket.competitiveContext.basedOn}
+              </p>
+              <p>
+                <span className="font-mono-label text-[9px] uppercase text-white/35">
+                  Competitor gap:{" "}
+                </span>
+                {bucket.competitiveContext.competitorGap}
+              </p>
+              <p>
+                <span className="font-mono-label text-[9px] uppercase text-white/35">
+                  Your advantage:{" "}
+                </span>
+                {bucket.competitiveContext.yourAdvantage}
+              </p>
+            </div>
+          )}
           {bucket.complianceNote && (
             <p className="mt-2 rounded-md border border-[var(--yellow)]/30 bg-[var(--yellow)]/10 px-2 py-1 text-xs text-[var(--yellow)]">
               {bucket.complianceNote}
@@ -214,9 +243,19 @@ function ContentAnglesSection() {
   );
 }
 
-function ContentBucketsSection() {
+function ContentBucketsSection({ highlightBucketId }: { highlightBucketId?: string | null }) {
   const { selectedProduct } = useApp();
   const [buckets, setBuckets] = useState(CONTENT_BUCKETS);
+  const scrolledRef = useRef(false);
+
+  useEffect(() => {
+    if (!highlightBucketId || scrolledRef.current) return;
+    const el = document.getElementById(`bucket-${highlightBucketId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      scrolledRef.current = true;
+    }
+  }, [highlightBucketId]);
 
   const handleToggle = (id: string, enabled: boolean) => {
     setBuckets((prev) => prev.map((b) => (b.id === id ? { ...b, enabled } : b)));
@@ -239,6 +278,7 @@ function ContentBucketsSection() {
             bucket={bucket}
             onToggle={handleToggle}
             onNotesChange={handleNotesChange}
+            highlighted={highlightBucketId === bucket.id}
           />
         ))}
       </div>
@@ -287,8 +327,29 @@ function TikTokTab() {
   );
 }
 
-function DraftCreativeSection() {
-  const [tab, setTab] = useState<PlatformTab>("tiktok");
+function InspiredBySection() {
+  return (
+    <div className="rounded-lg border border-white/10 border-l-4 border-l-[var(--purple)] bg-white/[0.02] p-3">
+      <p className="font-mono-label text-[10px] uppercase tracking-widest text-[var(--purple)]">
+        Inspired by
+      </p>
+      <p className="mt-2 text-sm text-white/75">{DRAFT_INSPIRATION.triggeredBy}</p>
+      <p className="mt-1.5 text-sm text-white/60">{DRAFT_INSPIRATION.winningPattern}</p>
+      <p className="mt-1 text-xs text-white/45">{DRAFT_INSPIRATION.whyGenerated}</p>
+    </div>
+  );
+}
+
+const VALID_TABS: PlatformTab[] = ["tiktok", "meta", "google", "ai_prompts", "spark_ad"];
+
+function DraftCreativeSection({ initialTab }: { initialTab?: PlatformTab }) {
+  const [tab, setTab] = useState<PlatformTab>(initialTab ?? "tiktok");
+
+  useEffect(() => {
+    if (initialTab && VALID_TABS.includes(initialTab)) {
+      setTab(initialTab);
+    }
+  }, [initialTab]);
 
   const tabContent: Record<PlatformTab, ReactNode> = {
     tiktok: <TikTokTab />,
@@ -300,7 +361,8 @@ function DraftCreativeSection() {
 
   return (
     <Panel title="Draft Creative">
-      <div className="-mx-1 mb-4 overflow-x-auto px-1 pb-1">
+      <InspiredBySection />
+      <div className="-mx-1 mb-4 mt-4 overflow-x-auto px-1 pb-1">
         <div className="flex min-w-max gap-1 border-b border-white/10 pb-3">
           {PLATFORM_TABS.map((t) => (
             <button
@@ -471,13 +533,19 @@ function DetailSidebar() {
   );
 }
 
-function DetailView() {
+function DetailView({
+  initialTab,
+  highlightBucketId,
+}: {
+  initialTab?: PlatformTab;
+  highlightBucketId?: string | null;
+}) {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
       <div className="space-y-4 lg:col-span-2 lg:space-y-6">
         <ContentAnglesSection />
-        <ContentBucketsSection />
-        <DraftCreativeSection />
+        <ContentBucketsSection highlightBucketId={highlightBucketId} />
+        <DraftCreativeSection initialTab={initialTab} />
         <DraftHistorySection />
       </div>
       <DetailSidebar />
@@ -485,6 +553,26 @@ function DetailView() {
   );
 }
 
+function ContentStudioDetail() {
+  const searchParams = useSearchParams();
+  const { setViewMode } = useApp();
+
+  const tabParam = searchParams.get("tab");
+  const initialTab = VALID_TABS.includes(tabParam as PlatformTab)
+    ? (tabParam as PlatformTab)
+    : undefined;
+  const highlightBucketId = searchParams.get("bucket");
+
+  useEffect(() => {
+    if (searchParams.has("tab") || searchParams.has("bucket")) {
+      setViewMode("detail");
+    }
+  }, [searchParams, setViewMode]);
+
+  return <DetailView initialTab={initialTab} highlightBucketId={highlightBucketId} />;
+}
+
 export function ContentStudio({ variant }: ContentStudioProps) {
-  return variant === "summary" ? <SummaryView /> : <DetailView />;
+  if (variant === "summary") return <SummaryView />;
+  return <ContentStudioDetail />;
 }

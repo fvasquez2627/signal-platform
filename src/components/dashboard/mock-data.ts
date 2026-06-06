@@ -42,9 +42,95 @@ export type PlatformMetric = {
     | null;
 };
 
-export const URGENT_ALERT = {
-  title: "Competitor launch detected — Vital Proteins shipped Collagen+ Energy",
-  subtitle: "High-priority threat · Score impact +14 · Action recommended within 24h",
+export type ActionUrgency = "urgent" | "opportunity" | "quick-win";
+
+export type ActionItem = {
+  id: string;
+  urgency: ActionUrgency;
+  sourceSignal: string;
+  timestamp: string;
+  title: string;
+  why: string;
+  ready: string[];
+  primaryButton: string;
+  dismissible: boolean;
+  summaryLabel: string;
+  contentHref: string;
+};
+
+export const ACTION_ITEMS: ActionItem[] = [
+  {
+    id: "1",
+    urgency: "urgent",
+    sourceSignal: "Meta Ad Library",
+    timestamp: "12m ago",
+    title: "Counter Vital Proteins — they're targeting your #1 keyword now",
+    why: "47 new Meta creatives detected in 72hrs. Hook patterns mirror your top TikTok format. Est. spend up 220% vs prior period.",
+    ready: ["TikTok script", "Meta copy", "Counter-brief"],
+    primaryButton: "Review Counter-Brief →",
+    dismissible: false,
+    summaryLabel: "Counter Vital Proteins push — Brief ready",
+    contentHref: "/content?tab=tiktok",
+  },
+  {
+    id: "2",
+    urgency: "opportunity",
+    sourceSignal: "TikTok Trends",
+    timestamp: "38m ago",
+    title: "Claim #CollagenCoffee before the window closes — 3 days left",
+    why: "Trend at 2.4M views and rising. No major brand has posted yet. Peak predicted in 72 hours.",
+    ready: ["TikTok hook", "Script", "Sound selected"],
+    primaryButton: "Approve & Schedule →",
+    dismissible: true,
+    summaryLabel: "#CollagenCoffee window — 3 days left",
+    contentHref: "/content?tab=tiktok&bucket=1",
+  },
+  {
+    id: "3",
+    urgency: "quick-win",
+    sourceSignal: "Amazon Reviews",
+    timestamp: "1h ago",
+    title: "One mixability post could capture NeoCell's churning customers",
+    why: "47 new 1-star reviews citing taste and clumping. Switcher intent high.",
+    ready: ["TikTok script", "Talking points"],
+    primaryButton: "Review Draft →",
+    dismissible: true,
+    summaryLabel: "NeoCell switchers — Draft ready",
+    contentHref: "/content?tab=tiktok&bucket=2",
+  },
+  {
+    id: "4",
+    urgency: "opportunity",
+    sourceSignal: "PubMed",
+    timestamp: "2h ago",
+    title: "New clinical study backs your joint claims — publish before competitors",
+    why: "Peer-reviewed study published today directly supports Type 1 collagen for joints. Educational content window is now.",
+    ready: ["Educational script", "Instagram carousel", "Blog outline"],
+    primaryButton: "Review Content →",
+    dismissible: true,
+    summaryLabel: "Joint study content — 3 assets ready",
+    contentHref: "/content?tab=meta&bucket=4",
+  },
+  {
+    id: "5",
+    urgency: "quick-win",
+    sourceSignal: "Google Trends",
+    timestamp: "3h ago",
+    title: "Marine vs bovine collagen — own this search before competitors do",
+    why: "+67% search volume this week, no brand content ranking. You carry both — unique position.",
+    ready: ["SEO article outline", "TikTok education series"],
+    primaryButton: "Review Content →",
+    dismissible: true,
+    summaryLabel: "Marine vs bovine SEO — Outline ready",
+    contentHref: "/content?tab=google&bucket=3",
+  },
+];
+
+export const INTELLIGENCE_SUMMARY = {
+  label: "YouTheory Collagen",
+  firstSentence:
+    "Vital Proteins is making an aggressive move on your core keywords with heavy Meta spend and a new SKU launch.",
+  full: "Vital Proteins is making an aggressive move on your core keywords with heavy Meta spend and a new SKU launch. NeoCell is losing ground — their taste complaints create a capture opportunity. The morning routine content angle is trending but unclaimed by any major collagen brand. This week's priority: establish the morning routine angle before Vital Proteins does.",
 };
 
 export const STAT_CARDS = {

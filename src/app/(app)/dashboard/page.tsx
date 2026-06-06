@@ -9,7 +9,7 @@ export default function DashboardPage() {
     <>
       <PageHeader
         title="Overview"
-        description="High-level metrics and priorities for your content program"
+        description="Your morning briefing — what to do today, ready to execute"
       />
       <PageContent
         summary={<DashboardOverview variant="summary" />}

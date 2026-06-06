@@ -1,19 +1,23 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 import { useApp } from "@/context/app-context";
-import { formatPlatformLabel, matchesCompetitorName } from "@/lib/product-utils";
+import { matchesCompetitorName } from "@/lib/product-utils";
 import {
+  ACTION_ITEMS,
   AGENTS,
   COMPETITORS,
   DRAFT_CREATIVE,
+  INTELLIGENCE_SUMMARY,
   PLATFORMS,
   SIGNAL_BORDER,
   SIGNALS,
   STAT_CARDS,
   THREAT_STYLES,
-  URGENT_ALERT,
   PLATFORM_ACCENT,
+  type ActionItem,
+  type ActionUrgency,
   type SignalFilter,
 } from "@/components/dashboard/mock-data";
 import { IntegrationSection } from "@/components/integrations/integration-section";
@@ -101,6 +105,30 @@ const ACCENT_VAR: Record<string, string> = {
   yellow: "var(--yellow)",
 };
 
+const URGENCY_BORDER: Record<ActionUrgency, string> = {
+  urgent: "border-l-[var(--red)]",
+  opportunity: "border-l-[var(--yellow)]",
+  "quick-win": "border-l-[var(--green)]",
+};
+
+const URGENCY_BADGE: Record<ActionUrgency, string> = {
+  urgent: "bg-[var(--red)]/15 text-[var(--red)]",
+  opportunity: "bg-[var(--yellow)]/15 text-[var(--yellow)]",
+  "quick-win": "bg-[var(--green)]/15 text-[var(--green)]",
+};
+
+const URGENCY_LABEL: Record<ActionUrgency, string> = {
+  urgent: "Urgent",
+  opportunity: "Opportunity",
+  "quick-win": "Quick Win",
+};
+
+const SUMMARY_EMOJI: Record<ActionUrgency, string> = {
+  urgent: "🔴",
+  opportunity: "🟡",
+  "quick-win": "🟢",
+};
+
 function MiniBarChart({
   values,
   accent,
@@ -124,50 +152,173 @@ function MiniBarChart({
   );
 }
 
-function UrgentAlertBanner({
-  visible,
+function ActionItemCard({
+  item,
   onDismiss,
-  condensed,
 }: {
-  visible: boolean;
-  onDismiss: () => void;
-  condensed?: boolean;
+  item: ActionItem;
+  onDismiss?: () => void;
 }) {
-  if (!visible) return null;
+  const router = useRouter();
 
   return (
-    <div
-      role="alert"
-      className="flex flex-col gap-3 rounded-xl border border-[var(--red)]/40 bg-[var(--red)]/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+    <article
+      className={`rounded-xl border border-white/10 border-l-4 bg-white/[0.03] p-4 ${URGENCY_BORDER[item.urgency]}`}
     >
-      <div className="min-w-0 flex-1">
-        <p className="font-mono-label text-[10px] font-medium uppercase tracking-widest text-[var(--red)]">
-          Urgent · High priority
-        </p>
-        <p className="mt-1 font-heading text-sm font-semibold text-white sm:text-base">
-          {URGENT_ALERT.title}
-        </p>
-        {!condensed && (
-          <p className="mt-0.5 text-xs text-white/60">{URGENT_ALERT.subtitle}</p>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span
+          className={`rounded px-2 py-0.5 font-mono-label text-[10px] font-medium uppercase tracking-wide ${URGENCY_BADGE[item.urgency]}`}
+        >
+          {URGENCY_LABEL[item.urgency]}
+        </span>
+        <span className="rounded bg-white/5 px-2 py-0.5 font-mono-label text-[10px] uppercase tracking-wide text-white/50">
+          {item.sourceSignal}
+        </span>
+        <span className="font-mono-label text-[10px] text-white/35">{item.timestamp}</span>
+      </div>
+
+      <h3 className="mt-2.5 font-heading text-base font-semibold leading-snug text-white">
+        {item.title}
+      </h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-white/55">{item.why}</p>
+
+      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+        {item.ready.map((asset) => (
+          <span key={asset} className="text-xs text-[var(--green)]">
+            ✓ {asset} ready
+          </span>
+        ))}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => router.push(item.contentHref)}
+          className="rounded-lg bg-[var(--cyan)] px-4 py-2 text-xs font-semibold text-[var(--bg)] transition-opacity hover:opacity-90"
+        >
+          {item.primaryButton}
+        </button>
+        {item.dismissible && onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white/60 transition-colors hover:bg-white/5 hover:text-white/80"
+          >
+            Dismiss
+          </button>
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <button
-          type="button"
-          className="rounded-lg bg-[var(--red)] px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
-        >
-          View Brief
-        </button>
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="rounded-lg border border-white/20 px-3 py-1.5 text-xs text-white/70 transition-colors hover:bg-white/5 hover:text-white"
-          aria-label="Dismiss alert"
-        >
-          Dismiss
-        </button>
+    </article>
+  );
+}
+
+function ViewAllActionsPrompt() {
+  const router = useRouter();
+
+  return (
+    <button
+      type="button"
+      onClick={() => router.push("/content")}
+      className="w-full rounded-xl border border-dashed border-[var(--cyan)]/30 bg-[var(--cyan)]/5 px-4 py-3 text-sm font-medium text-[var(--cyan)] transition-colors hover:bg-[var(--cyan)]/10"
+    >
+      View all actions →
+    </button>
+  );
+}
+
+function ActionItemsPanel({ isDetail }: { isDetail: boolean }) {
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+
+  const visibleItems = useMemo(() => {
+    const list = ACTION_ITEMS.filter((item) => !dismissed.has(item.id));
+    return isDetail ? list : list.slice(0, 3);
+  }, [dismissed, isDetail]);
+
+  const handleDismiss = (id: string) => {
+    setDismissed((prev) => new Set(prev).add(id));
+  };
+
+  return (
+    <section className="rounded-xl border border-white/10 bg-white/[0.02]">
+      <div className="border-b border-white/10 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="font-heading text-sm font-semibold tracking-wide text-white">
+            Today&apos;s Actions
+          </h2>
+          <span className="rounded-md bg-[var(--cyan)]/15 px-2 py-0.5 font-mono-label text-[10px] font-medium text-[var(--cyan)]">
+            {visibleItems.length}
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-white/45">
+          Generated from overnight signal analysis — everything below is ready to execute
+        </p>
       </div>
-    </div>
+
+      <div className="space-y-3 p-4">
+        {isDetail ? (
+          visibleItems.map((item) => (
+            <ActionItemCard
+              key={item.id}
+              item={item}
+              onDismiss={item.dismissible ? () => handleDismiss(item.id) : undefined}
+            />
+          ))
+        ) : (
+          <ol className="space-y-2">
+            {visibleItems.map((item, i) => (
+              <li
+                key={item.id}
+                className="flex items-start gap-2 rounded-lg bg-white/[0.03] px-3 py-2.5 text-sm text-white/80"
+              >
+                <span className="shrink-0 font-mono-label text-xs text-white/40">
+                  {i + 1}.
+                </span>
+                <span>
+                  {SUMMARY_EMOJI[item.urgency]} {item.summaryLabel}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+        {!isDetail && <ViewAllActionsPrompt />}
+      </div>
+    </section>
+  );
+}
+
+function IntelligenceSummarySection({ isDetail }: { isDetail: boolean }) {
+  const { setViewMode, selectedClient, selectedProduct } = useApp();
+  const clientName = selectedClient?.name ?? "YouTheory";
+  const productName = selectedProduct?.name ?? "Collagen Peptides";
+  const productLabel = `${clientName} ${productName}`;
+
+  const fullText = INTELLIGENCE_SUMMARY.full.replace(
+    /YouTheory Collagen/g,
+    productLabel,
+  );
+  const firstSentence = INTELLIGENCE_SUMMARY.firstSentence;
+
+  return (
+    <section className="rounded-xl border border-white/10 border-l-4 border-l-[var(--cyan)] bg-white/[0.02] p-4">
+      <p className="font-mono-label text-[10px] font-medium uppercase tracking-widest text-[var(--cyan)]">
+        Intelligence Summary
+      </p>
+      <p className="mt-1 text-xs text-white/45">
+        What this week&apos;s signals mean for {productLabel} — written by AI
+      </p>
+      <p className="mt-3 text-sm leading-relaxed text-white/75">
+        {isDetail ? fullText : firstSentence}
+      </p>
+      {!isDetail && (
+        <button
+          type="button"
+          onClick={() => setViewMode("detail")}
+          className="mt-3 text-sm font-medium text-[var(--cyan)] transition-colors hover:text-[var(--cyan)]/80"
+        >
+          Read full summary →
+        </button>
+      )}
+    </section>
   );
 }
 
@@ -294,7 +445,7 @@ function SignalFeedPanel({ isDetail }: { isDetail: boolean }) {
 
   return (
     <Panel
-      title="Market Feed"
+      title="Signal Intelligence"
       action={
         <div className="flex flex-wrap gap-1">
           {filters.map((f) => (
@@ -386,56 +537,6 @@ function AgentPipelinePanel({ isDetail }: { isDetail: boolean }) {
           </li>
         ))}
       </ul>
-    </Panel>
-  );
-}
-
-function TargetDemographicCard() {
-  const { currentDemographic } = useApp();
-
-  return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-      <p className="font-mono-label text-[10px] font-medium uppercase tracking-widest text-white/45">
-        Target Demographic
-      </p>
-      <p className="mt-2 text-sm leading-relaxed text-white/80">{currentDemographic}</p>
-    </div>
-  );
-}
-
-function ProductIntelCard() {
-  const { currentBenefit, currentDemographic, currentPlatforms, currentPeaks } = useApp();
-
-  return (
-    <Panel title="Product Intel">
-      <dl className="space-y-3 text-sm">
-        <div>
-          <dt className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
-            Primary benefit
-          </dt>
-          <dd className="mt-1 text-white/80">{currentBenefit}</dd>
-        </div>
-        <div>
-          <dt className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
-            Target
-          </dt>
-          <dd className="mt-1 text-white/80">{currentDemographic}</dd>
-        </div>
-        <div>
-          <dt className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
-            Platforms
-          </dt>
-          <dd className="mt-1 text-white/80">
-            {currentPlatforms.map(formatPlatformLabel).join(" · ") || "—"}
-          </dd>
-        </div>
-        <div>
-          <dt className="font-mono-label text-[10px] uppercase tracking-widest text-white/40">
-            Seasonal peaks
-          </dt>
-          <dd className="mt-1 text-white/80">{currentPeaks.join(" · ") || "—"}</dd>
-        </div>
-      </dl>
     </Panel>
   );
 }
@@ -612,25 +713,12 @@ function PlatformPerformance({ isDetail }: { isDetail: boolean }) {
 
 export function DashboardOverview({ variant }: DashboardOverviewProps) {
   const isDetail = variant === "detail";
-  const [alertDismissed, setAlertDismissed] = useState(false);
-  const showAlert = !alertDismissed;
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <UrgentAlertBanner
-        visible={showAlert}
-        onDismiss={() => setAlertDismissed(true)}
-        condensed={!isDetail}
-      />
-
+      <ActionItemsPanel isDetail={isDetail} />
+      <IntelligenceSummarySection isDetail={isDetail} />
       <StatRow isDetail={isDetail} />
-
-      {isDetail && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <TargetDemographicCard />
-          <ProductIntelCard />
-        </div>
-      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         <SignalFeedPanel isDetail={isDetail} />

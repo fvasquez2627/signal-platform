@@ -1,5 +1,11 @@
 export type BucketStatus = "queued" | "generated" | "approved";
 
+export type CompetitiveContext = {
+  basedOn: string;
+  competitorGap: string;
+  yourAdvantage: string;
+};
+
 export type ContentBucket = {
   id: string;
   name: string;
@@ -10,6 +16,7 @@ export type ContentBucket = {
   notes: string;
   status: BucketStatus;
   complianceNote?: string;
+  competitiveContext?: CompetitiveContext;
 };
 
 export type PlatformTab = "tiktok" | "meta" | "google" | "ai_prompts" | "spark_ad";
@@ -44,6 +51,11 @@ export const CONTENT_BUCKETS: ContentBucket[] = [
     enabled: true,
     notes: "Lead with coffee ritual demo. Prioritize UGC-style hooks.",
     status: "generated",
+    competitiveContext: {
+      basedOn: "#CollagenCoffee TikTok Trends",
+      competitorGap: "No brand has claimed this",
+      yourAdvantage: "First mover, 3 day window",
+    },
   },
   {
     id: "2",
@@ -54,6 +66,11 @@ export const CONTENT_BUCKETS: ContentBucket[] = [
     enabled: true,
     notes: "Never name competitor directly. Focus on dissolve-in-coffee proof.",
     status: "generated",
+    competitiveContext: {
+      basedOn: "NeoCell 47 new 1-star reviews",
+      competitorGap: "Taste/mixability weakness",
+      yourAdvantage: "YouTheory dissolves cleanly",
+    },
   },
   {
     id: "3",
@@ -64,6 +81,11 @@ export const CONTENT_BUCKETS: ContentBucket[] = [
     enabled: true,
     notes: "YouTheory uses bovine peptides — position as bioavailability advantage.",
     status: "queued",
+    competitiveContext: {
+      basedOn: "Marine vs bovine search spike (+67%)",
+      competitorGap: "No brand content ranking",
+      yourAdvantage: "You carry both — unique position",
+    },
   },
   {
     id: "4",
@@ -75,6 +97,11 @@ export const CONTENT_BUCKETS: ContentBucket[] = [
     notes: "Include study citation in description. Legal review before publish.",
     status: "generated",
     complianceNote: "Compliance review required before approval",
+    competitiveContext: {
+      basedOn: "New Type 1 collagen joint study (PubMed)",
+      competitorGap: "Only 8% of ads cite clinical backing",
+      yourAdvantage: "Peer-reviewed study supports your claims",
+    },
   },
   {
     id: "5",
@@ -102,6 +129,15 @@ export const ACTIVE_DRAFT = {
   bucket: "Trend Response",
   signalSource: "TikTok Trends → Meta",
   generatedAt: "Today 6:02 AM",
+};
+
+export const DRAFT_INSPIRATION = {
+  triggeredBy:
+    "Generated in response to: Vital Proteins scaling UGC spend 220% (Meta Ad Library, 12 min ago)",
+  winningPattern:
+    "Winning pattern used: Before/After UGC, 18-22 seconds, morning routine hook",
+  whyGenerated:
+    "Counter-brief drafted to reclaim morning routine angle before competitor peak",
 };
 
 export const TIKTOK_DRAFT = {

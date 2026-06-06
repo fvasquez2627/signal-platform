@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import { useApp } from "@/context/app-context";
 import { getProductSignalCount, matchesKeyword } from "@/lib/product-utils";
@@ -8,6 +9,7 @@ import {
   DETAIL_FILTERS,
   FEED_SIGNALS,
   getTopSignals,
+  hasCreativeIntel,
   LAST_UPDATED,
   matchesFilter,
   QUICK_STATS,
@@ -17,6 +19,7 @@ import {
   topSourcesByCount,
   TRENDING_KEYWORDS,
   TYPE_TAG,
+  type CreativeIntelligence,
   type DetailFilter,
   type FeedSignal,
 } from "@/components/signals/mock-data";
@@ -85,6 +88,90 @@ function ScoreBadge({ score }: { score: number }) {
   );
 }
 
+function IntelBadge({ children }: { children: ReactNode }) {
+  return (
+    <span className="rounded bg-white/5 px-2 py-0.5 font-mono-label text-[10px] text-white/60">
+      {children}
+    </span>
+  );
+}
+
+function CreativeIntelligenceSection({
+  intel,
+  contentHref,
+}: {
+  intel: CreativeIntelligence;
+  contentHref: string;
+}) {
+  const longRunning = intel.daysRunning >= 60;
+
+  return (
+    <div className="mt-4 space-y-3 rounded-lg border border-[var(--purple)]/20 bg-[var(--purple)]/5 p-3">
+      <p className="font-mono-label text-[10px] uppercase tracking-widest text-[var(--purple)]">
+        Creative intelligence
+        <span className="ml-2 text-white/30">
+          {/* INTEGRATION: meta_ad_library_full + tiktok_commercial_api + ai_analysis */}
+        </span>
+      </p>
+
+      <div className="flex flex-wrap gap-1.5">
+        <IntelBadge>{intel.hookType}</IntelBadge>
+        <IntelBadge>{intel.format}</IntelBadge>
+        <IntelBadge>{intel.length}</IntelBadge>
+        <IntelBadge>{intel.reach} reach</IntelBadge>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <span className="rounded bg-white/5 px-2 py-0.5 font-mono-label text-[10px] text-white/55">
+          Days running: {intel.daysRunning}
+        </span>
+        {longRunning && (
+          <span className="rounded bg-[var(--yellow)]/15 px-2 py-0.5 font-mono-label text-[10px] text-[var(--yellow)]">
+            ⚡ Long-running — likely profitable
+          </span>
+        )}
+      </div>
+
+      <p className="text-sm italic text-white/65">
+        Opening line: &ldquo;{intel.extractedHook}&rdquo;
+      </p>
+
+      {intel.hasCounterDraft && intel.counterDraftHook ? (
+        <div className="rounded-lg border border-[var(--cyan)]/25 bg-[var(--cyan)]/5 px-3 py-2.5">
+          <p className="font-mono-label text-[10px] uppercase tracking-widest text-[var(--cyan)]">
+            Your version is ready
+          </p>
+          <p className="mt-1 text-sm text-white/75">&ldquo;{intel.counterDraftHook}&rdquo;</p>
+          <Link
+            href={contentHref}
+            className="mt-2 inline-block rounded-lg bg-[var(--cyan)] px-3 py-1.5 text-xs font-semibold text-[var(--bg)] transition-opacity hover:opacity-90"
+          >
+            Review Draft →
+          </Link>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5">
+          <p className="font-mono-label text-[10px] uppercase tracking-widest text-white/45">
+            Generate your version
+          </p>
+          <Link
+            href={contentHref}
+            className="mt-2 inline-block rounded-lg border border-[var(--cyan)]/40 bg-[var(--cyan)]/10 px-3 py-1.5 text-xs font-semibold text-[var(--cyan)] transition-colors hover:bg-[var(--cyan)]/20"
+          >
+            Create Counter-Draft →
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function creativeContentHref(signal: FeedSignal): string {
+  if (signal.id === "sig-01") return "/content?tab=tiktok&bucket=2";
+  if (signal.id === "sig-04") return "/content?tab=tiktok&bucket=1";
+  return "/content?tab=tiktok";
+}
+
 function SignalCard({
   signal,
   compact = false,
@@ -93,6 +180,7 @@ function SignalCard({
   compact?: boolean;
 }) {
   const action = signalAction(signal.type);
+  const showCreative = !compact && hasCreativeIntel(signal) && signal.creativeIntel;
 
   return (
     <article
@@ -109,6 +197,13 @@ function SignalCard({
       <p className="mt-1.5 text-sm leading-relaxed text-white/60">
         {compact ? signal.summary : signal.body}
       </p>
+
+      {showCreative && (
+        <CreativeIntelligenceSection
+          intel={signal.creativeIntel!}
+          contentHref={creativeContentHref(signal)}
+        />
+      )}
 
       {!compact && (
         <>
@@ -130,16 +225,18 @@ function SignalCard({
               </span>
               <ScoreBadge score={signal.score} />
             </div>
-            <button
-              type="button"
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90 ${
-                action === "Add to Content Queue"
-                  ? "bg-[var(--green)] text-[var(--bg)]"
-                  : "border border-[var(--cyan)]/40 bg-[var(--cyan)]/10 text-[var(--cyan)]"
-              }`}
-            >
-              {action}
-            </button>
+            {!showCreative && (
+              <button
+                type="button"
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-90 ${
+                  action === "Add to Content Queue"
+                    ? "bg-[var(--green)] text-[var(--bg)]"
+                    : "border border-[var(--cyan)]/40 bg-[var(--cyan)]/10 text-[var(--cyan)]"
+                }`}
+              >
+                {action}
+              </button>
+            )}
           </div>
         </>
       )}

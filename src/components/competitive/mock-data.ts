@@ -333,3 +333,175 @@ export function getPriceDiff(their: number, yours: number) {
   const pct = ((diff / their) * 100).toFixed(1);
   return { diff, pct, label: diff > 0 ? "overpriced" : diff < 0 ? "underpriced" : "matched" };
 }
+
+export type FormatBreakdownRow = {
+  label: string;
+  pct: number;
+};
+
+export type SpendRow = {
+  name: string;
+  spend: string;
+  amountK: number;
+  isYou?: boolean;
+};
+
+export type CategoryGap = {
+  id: string;
+  level: "high" | "medium";
+  title: string;
+  description: string;
+  actionLabel: string;
+  contentHref: string;
+};
+
+export type HookIntelRow = {
+  hookType: string;
+  pctWinning: number;
+  avgReach: string;
+  hasCoverage: boolean;
+  actionLabel: string;
+  contentHref: string;
+};
+
+export type LongRunningAd = {
+  id: string;
+  competitor: string;
+  daysRunning: number;
+  platforms: string[];
+  hook: string;
+  format: string;
+  reach: string;
+  whyWorking: string;
+};
+
+export const FORMAT_BREAKDOWN: FormatBreakdownRow[] = [
+  { label: "Before/After UGC", pct: 54 },
+  { label: "Product Demo", pct: 22 },
+  { label: "Founder Story", pct: 15 },
+  { label: "Tutorial/Education", pct: 9 },
+];
+
+export const FORMAT_INTEL = {
+  winningFormat: "Before/After UGC",
+  winningPct: 54,
+  avgLength: "18-22 sec",
+  topHookType: "Problem identification",
+  topCta: '"Link in bio" (61%)',
+  insight:
+    "Morning routine integration is trending but unclaimed by any major collagen brand",
+  draftReadyLabel: "Your morning routine draft is ready",
+  draftHref: "/content?tab=tiktok&bucket=1",
+};
+
+export const SPEND_INTELLIGENCE: SpendRow[] = [
+  { name: "Vital Proteins", spend: "$84K/wk", amountK: 84 },
+  { name: "Garden of Life", spend: "$52K/wk", amountK: 52 },
+  { name: "Sports Research", spend: "$38K/wk", amountK: 38 },
+  { name: "NeoCell", spend: "$28K/wk", amountK: 28 },
+  { name: "Ancient Nutrition", spend: "$11K/wk", amountK: 11 },
+  { name: "YouTheory", spend: "$22K/wk", amountK: 22, isYou: true },
+];
+
+export const SPEND_INSIGHT =
+  "Vital Proteins increased spend 220% this week — likely testing new SKU launch";
+
+export const CATEGORY_GAPS: CategoryGap[] = [
+  {
+    id: "gap-1",
+    level: "high",
+    title: "Clinical credibility angle",
+    description:
+      "Only 8% of ads reference studies or clinical backing. You have a new peer-reviewed study supporting your claims.",
+    actionLabel: "Draft using this angle →",
+    contentHref: "/content?tab=meta&bucket=4",
+  },
+  {
+    id: "gap-2",
+    level: "high",
+    title: "Mixability/dissolve demo",
+    description:
+      "NeoCell losing customers over taste. No competitor is showing dissolve proof. You could own this.",
+    actionLabel: "Draft using this angle →",
+    contentHref: "/content?tab=tiktok&bucket=2",
+  },
+  {
+    id: "gap-3",
+    level: "medium",
+    title: "Collagen + coffee ritual",
+    description: "#CollagenCoffee trending organically. No brand has claimed it yet.",
+    actionLabel: "Draft ready — review →",
+    contentHref: "/content?tab=tiktok&bucket=1",
+  },
+];
+
+export const HOOK_INTELLIGENCE: HookIntelRow[] = [
+  {
+    hookType: "Problem identification opening",
+    pctWinning: 38,
+    avgReach: "47K",
+    hasCoverage: true,
+    actionLabel: "View yours",
+    contentHref: "/content?tab=tiktok",
+  },
+  {
+    hookType: "Before/After promise",
+    pctWinning: 29,
+    avgReach: "52K",
+    hasCoverage: false,
+    actionLabel: "Create draft",
+    contentHref: "/content?tab=tiktok&bucket=2",
+  },
+  {
+    hookType: "Authority/Clinical",
+    pctWinning: 18,
+    avgReach: "31K",
+    hasCoverage: false,
+    actionLabel: "Create draft",
+    contentHref: "/content?tab=meta&bucket=4",
+  },
+  {
+    hookType: "Trend/Sound hook",
+    pctWinning: 15,
+    avgReach: "89K",
+    hasCoverage: true,
+    actionLabel: "View yours",
+    contentHref: "/content?tab=tiktok&bucket=1",
+  },
+];
+
+export const LONG_RUNNING_ADS: LongRunningAd[] = [
+  {
+    id: "lr-1",
+    competitor: "Vital Proteins",
+    daysRunning: 73,
+    platforms: ["Meta", "Instagram"],
+    hook: "I tried collagen for 60 days...",
+    format: "UGC testimonial, 22 seconds",
+    reach: "890K unique users",
+    whyWorking:
+      "Long-form testimonial builds trust. 60-day frame sets realistic expectations.",
+  },
+  {
+    id: "lr-2",
+    competitor: "Garden of Life",
+    daysRunning: 61,
+    platforms: ["TikTok"],
+    hook: "My morning routine changed everything",
+    format: "Day-in-life, 31 seconds",
+    reach: "445K unique users",
+    whyWorking:
+      "Lifestyle integration removes supplement stigma. Relatable setting.",
+  },
+  {
+    id: "lr-3",
+    competitor: "Sports Research",
+    daysRunning: 58,
+    platforms: ["Meta"],
+    hook: "Doctor recommended this to me",
+    format: "Authority/UGC hybrid, 18 seconds",
+    reach: "312K unique users",
+    whyWorking:
+      "Authority hook with UGC delivery combines trust signals effectively.",
+  },
+];

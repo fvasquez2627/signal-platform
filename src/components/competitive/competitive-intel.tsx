@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import {
+  AdLongevityTracker,
+  WhatsWinningNowPanel,
+} from "@/components/competitive/competitive-creative-intel";
 import { CompetitiveExtras } from "@/components/competitive/competitive-extras";
 import { useApp } from "@/context/app-context";
 import { matchesCompetitorName } from "@/lib/product-utils";
@@ -532,6 +536,8 @@ function DetailSidebar() {
 function DetailView({ activeCompetitors }: { activeCompetitors: Competitor[] }) {
   return (
     <div className="space-y-6">
+      <WhatsWinningNowPanel />
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         <div className="space-y-4 lg:col-span-2 lg:space-y-6">
           <Panel title="Competitor Tracker">
@@ -545,6 +551,7 @@ function DetailView({ activeCompetitors }: { activeCompetitors: Competitor[] }) 
           <MetaAdLibrary activeCompetitors={activeCompetitors} />
           <PricingIntelligence activeCompetitors={activeCompetitors} />
           <ShareOfVoiceChart />
+          <AdLongevityTracker />
         </div>
         <DetailSidebar />
       </div>
